@@ -1,0 +1,1760 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>محرك التشخيص التسويقي — الوحدات 1 + 2 + 3</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════
+   DESIGN TOKENS
+══════════════════════════════════════════════ */
+:root {
+  --bg:       #0a0c10;
+  --surface:  #111318;
+  --surface2: #161920;
+  --surface3: #0e1015;
+  --border:   #1e2229;
+  --gold:     #c9a84c;
+  --gold-dim: #8a6f2e;
+  --gold-pale:rgba(201,168,76,0.08);
+  --text:     #e8e6e1;
+  --muted:    #6b7280;
+  --danger:   #c0392b;
+  --success:  #27ae60;
+  --blue:     #3b82f6;
+  --purple:   #8b5cf6;
+  --teal:     #14b8a6;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family:'Cairo',sans-serif; background:var(--bg); color:var(--text);
+  min-height:100vh; display:flex; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding:20px 20px 80px; overflow-x:hidden;
+}
+body::before {
+  content:''; position:fixed; inset:0;
+  background-image:linear-gradient(rgba(201,168,76,0.03) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(201,168,76,0.03) 1px,transparent 1px);
+  background-size:60px 60px; pointer-events:none; z-index:0;
+}
+body::after {
+  content:''; position:fixed; top:-200px; left:50%; transform:translateX(-50%);
+  width:800px; height:400px;
+  background:radial-gradient(ellipse,rgba(201,168,76,0.06) 0%,transparent 70%);
+  pointer-events:none; z-index:0;
+}
+.wrapper { position:relative; z-index:1; width:100%; max-width:740px; padding-top:24px; }
+
+/* ── Header ── */
+.header { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; opacity:0; animation:fadeUp 0.6s ease forwards; }
+.logo { font-size:13px; font-weight:700; letter-spacing:3px; color:var(--gold); text-transform:uppercase; }
+.session-badge { font-size:11px; color:var(--muted); font-weight:300; }
+.unit-tag { font-size:10px; font-weight:700; letter-spacing:2px; background:rgba(201,168,76,0.12); color:var(--gold-dim); padding:3px 10px; border-radius:20px; border:1px solid var(--gold-dim); transition:all 0.3s; }
+
+/* ── Progress ── */
+.progress-area { margin-bottom:28px; opacity:0; animation:fadeUp 0.6s 0.1s ease forwards; }
+.progress-meta { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:10px; }
+.progress-track { height:2px; background:var(--border); border-radius:2px; overflow:hidden; }
+.progress-fill { height:100%; background:linear-gradient(90deg,var(--gold-dim),var(--gold)); border-radius:2px; transition:width 0.5s cubic-bezier(0.4,0,0.2,1); }
+.step-dots { display:flex; gap:5px; margin-top:10px; flex-wrap:wrap; }
+.step-dot { width:6px; height:6px; border-radius:50%; background:var(--border); transition:all 0.3s; }
+.step-dot.done    { background:var(--gold-dim); }
+.step-dot.current { background:var(--gold); transform:scale(1.4); }
+
+/* ── Card ── */
+.card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:40px; position:relative; overflow:hidden; }
+.card::before { content:''; position:absolute; top:0; right:0; width:120px; height:120px; background:radial-gradient(circle at top right,rgba(201,168,76,0.05),transparent 70%); pointer-events:none; }
+
+/* ── Screens ── */
+.screen,.output-screen { display:none; animation:slideIn 0.4s cubic-bezier(0.4,0,0.2,1) forwards; }
+.screen.active,.output-screen.active { display:block; }
+@keyframes slideIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeUp  { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes spin    { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+.screen-number { font-size:11px; letter-spacing:3px; color:var(--gold-dim); font-weight:600; text-transform:uppercase; margin-bottom:16px; }
+.question { font-size:22px; font-weight:700; line-height:1.5; margin-bottom:8px; }
+.question-hint { font-size:13px; color:var(--muted); margin-bottom:28px; font-weight:300; }
+
+/* ── Options ── */
+.options { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.options.single-col { grid-template-columns:1fr; }
+.option-btn {
+  background:transparent; border:1px solid var(--border); border-radius:10px;
+  padding:14px 18px; color:var(--text); font-family:'Cairo',sans-serif;
+  font-size:14px; font-weight:600; cursor:pointer; text-align:right;
+  transition:all 0.2s; position:relative; overflow:hidden;
+}
+.option-btn::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(201,168,76,0.05),transparent); opacity:0; transition:opacity 0.2s; }
+.option-btn:hover { border-color:var(--gold-dim); color:var(--gold); transform:translateY(-1px); }
+.option-btn:hover::before { opacity:1; }
+.option-btn.selected { border-color:var(--gold); background:rgba(201,168,76,0.08); color:var(--gold); }
+
+/* ── Input ── */
+.input-group { display:flex; flex-direction:column; gap:10px; }
+.text-input {
+  background:transparent; border:1px solid var(--border); border-radius:10px;
+  padding:14px 18px; color:var(--text); font-family:'Cairo',sans-serif;
+  font-size:15px; font-weight:600; text-align:right; transition:border-color 0.2s; outline:none; width:100%;
+}
+.text-input:focus { border-color:var(--gold-dim); }
+.text-input::placeholder { color:var(--muted); font-weight:300; }
+.or-divider { text-align:center; color:var(--muted); font-size:12px; letter-spacing:2px; margin:4px 0; }
+
+/* ── Actions ── */
+.action-bar { display:flex; justify-content:space-between; align-items:center; margin-top:28px; gap:12px; }
+.btn-back {
+  background:transparent; border:1px solid var(--border); border-radius:10px;
+  padding:12px 22px; color:var(--muted); font-family:'Cairo',sans-serif;
+  font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s;
+}
+.btn-back:hover { border-color:var(--muted); color:var(--text); }
+.btn-back:disabled { opacity:0.3; cursor:not-allowed; }
+.btn-next {
+  background:linear-gradient(135deg,var(--gold-dim),var(--gold)); border:none; border-radius:10px;
+  padding:13px 32px; color:#0a0c10; font-family:'Cairo',sans-serif;
+  font-size:14px; font-weight:900; cursor:pointer; transition:all 0.2s; flex:1; max-width:220px;
+}
+.btn-next:hover { opacity:0.9; transform:translateY(-1px); }
+.btn-next:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+.error-msg { font-size:12px; color:var(--danger); margin-top:10px; display:none; }
+.error-msg.visible { display:block; }
+
+/* ── Greeting ── */
+.greeting-screen { text-align:center; padding:20px 0; }
+.greeting-icon { font-size:48px; margin-bottom:16px; display:block; }
+.greeting-title { font-size:28px; font-weight:900; color:var(--gold); margin-bottom:12px; }
+.greeting-sub { font-size:15px; color:var(--muted); font-weight:300; line-height:1.7; margin-bottom:32px; }
+.btn-start { background:linear-gradient(135deg,var(--gold-dim),var(--gold)); border:none; border-radius:12px; padding:16px 48px; color:#0a0c10; font-family:'Cairo',sans-serif; font-size:16px; font-weight:900; cursor:pointer; transition:all 0.2s; }
+.btn-start:hover { opacity:0.9; transform:translateY(-2px); }
+
+/* ══════════════════════════════════════════════
+   UNIT 2 RESULTS
+══════════════════════════════════════════════ */
+.processing-screen { text-align:center; padding:40px 0; }
+.processing-icon { font-size:48px; margin-bottom:20px; display:block; }
+.processing-title { font-size:20px; font-weight:700; color:var(--gold); margin-bottom:8px; }
+.processing-sub { font-size:14px; color:var(--muted); }
+.processing-steps { display:flex; flex-direction:column; gap:8px; margin-top:24px; }
+.proc-step { font-size:13px; color:var(--muted); display:flex; align-items:center; gap:10px; justify-content:center; }
+.proc-step.active { color:var(--gold); animation:pulse 1s infinite; }
+.proc-step.done { color:var(--success); }
+
+/* ── Section labels ── */
+.section-label { font-size:10px; letter-spacing:3px; font-weight:700; text-transform:uppercase; color:var(--muted); margin-bottom:12px; margin-top:24px; display:flex; align-items:center; gap:8px; }
+.section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ── Block cards (Unit 2) ── */
+.blocks-list { display:flex; flex-direction:column; gap:10px; }
+.block-card { border:1px solid var(--border); border-radius:12px; overflow:hidden; transition:border-color 0.2s; }
+.block-card:hover { border-color:var(--gold-dim); }
+.block-card-inner { display:flex; align-items:center; gap:16px; padding:16px 20px; }
+.block-card.fixed-block  { border-right:3px solid var(--gold); }
+.block-card.sector-block { border-right:3px solid var(--blue); }
+.block-card.anchor-block { border-right:3px solid var(--purple); }
+.block-card.rank-1 { border-right:3px solid #f59e0b; }
+.block-card.rank-2 { border-right:3px solid #94a3b8; }
+.block-card.rank-3 { border-right:3px solid #cd7f32; }
+.block-card.rank-other { border-right:3px solid #374151; }
+.block-icon { font-size:26px; flex-shrink:0; width:36px; text-align:center; }
+.block-info { flex:1; min-width:0; }
+.block-name { font-size:15px; font-weight:700; margin-bottom:2px; }
+.block-range { font-size:11px; color:var(--muted); font-weight:300; letter-spacing:1px; }
+.block-badge { font-size:10px; font-weight:700; letter-spacing:1px; padding:3px 10px; border-radius:20px; flex-shrink:0; }
+.badge-fixed  { background:rgba(201,168,76,0.12); color:var(--gold); border:1px solid var(--gold-dim); }
+.badge-sector { background:rgba(59,130,246,0.12); color:var(--blue); border:1px solid rgba(59,130,246,0.3); }
+.badge-anchor { background:rgba(139,92,246,0.12); color:var(--purple); border:1px solid rgba(139,92,246,0.3); }
+.badge-rank { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:900; flex-shrink:0; }
+.badge-rank.r1 { background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.4); }
+.badge-rank.r2 { background:rgba(148,163,184,0.15); color:#94a3b8; border:1px solid rgba(148,163,184,0.4); }
+.badge-rank.r3 { background:rgba(205,127,50,0.15); color:#cd7f32; border:1px solid rgba(205,127,50,0.4); }
+.badge-rank.rn { background:rgba(55,65,81,0.3); color:var(--muted); border:1px solid var(--border); }
+.block-score-wrap { display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
+.block-score-num { font-size:22px; font-weight:900; color:var(--gold); line-height:1; }
+.block-score-label { font-size:10px; color:var(--muted); letter-spacing:1px; }
+.score-bar-wrap { padding:0 20px 14px; }
+.score-bar-track { height:3px; background:var(--border); border-radius:3px; overflow:hidden; }
+.score-bar-fill { height:100%; background:linear-gradient(90deg,var(--gold-dim),var(--gold)); border-radius:3px; transition:width 0.8s cubic-bezier(0.4,0,0.2,1); }
+.breakdown-toggle { background:none; border:none; color:var(--muted); font-family:'Cairo',sans-serif; font-size:11px; cursor:pointer; padding:0 20px 14px; text-decoration:underline; text-underline-offset:3px; display:block; width:100%; text-align:right; }
+.breakdown-panel { display:none; padding:0 20px 16px; grid-template-columns:1fr 1fr; gap:6px 16px; }
+.breakdown-panel.open { display:grid; }
+.bk-row { display:flex; justify-content:space-between; font-size:12px; }
+.bk-label { color:var(--muted); }
+.bk-val.pos { color:var(--success); font-weight:700; }
+.bk-val.neg { color:var(--danger); font-weight:700; }
+.bk-val.zero { color:var(--muted); }
+.excluded-toggle { background:none; border:1px solid var(--border); border-radius:10px; padding:12px 20px; color:var(--muted); font-family:'Cairo',sans-serif; font-size:13px; cursor:pointer; width:100%; text-align:right; margin-top:20px; transition:all 0.2s; }
+.excluded-toggle:hover { border-color:var(--gold-dim); color:var(--text); }
+.excluded-list { display:none; margin-top:12px; }
+.excluded-list.open { display:flex; flex-direction:column; gap:8px; }
+.excluded-item { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.excluded-name { font-size:14px; font-weight:700; }
+.excluded-reason { font-size:12px; color:var(--danger); flex:1; text-align:left; }
+.excluded-score { font-size:12px; color:var(--muted); flex-shrink:0; }
+.warning-box { background:rgba(192,57,43,0.08); border:1px solid rgba(192,57,43,0.3); border-radius:12px; padding:16px 20px; margin-bottom:24px; display:none; font-size:13px; color:#e74c3c; font-weight:600; line-height:1.6; gap:10px; align-items:flex-start; }
+.warning-box.visible { display:flex; }
+.meta-chip { font-size:11px; font-weight:700; letter-spacing:1px; padding:3px 10px; border-radius:20px; }
+.meta-chip.fast      { background:rgba(59,130,246,0.12); color:var(--blue); border:1px solid rgba(59,130,246,0.3); }
+.meta-chip.sustained { background:rgba(39,174,96,0.12); color:var(--success); border:1px solid rgba(39,174,96,0.3); }
+.meta-chip.quota     { background:rgba(201,168,76,0.12); color:var(--gold); border:1px solid var(--gold-dim); }
+.results-header { display:flex; align-items:flex-start; gap:16px; margin-bottom:28px; padding-bottom:24px; border-bottom:1px solid var(--border); }
+.results-icon { width:48px; height:48px; background:rgba(39,174,96,0.12); border:1px solid rgba(39,174,96,0.3); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+.results-title { font-size:22px; font-weight:900; margin-bottom:4px; }
+.results-sub { font-size:13px; color:var(--muted); font-weight:300; }
+.results-meta { margin-right:auto; text-align:left; display:flex; flex-direction:column; gap:4px; align-items:flex-end; }
+.json-toggle { background:transparent; border:1px solid var(--gold-dim); border-radius:10px; padding:12px 20px; color:var(--gold); font-family:'Cairo',sans-serif; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; width:100%; margin-top:12px; }
+.json-toggle:hover { background:rgba(201,168,76,0.08); }
+.json-section { display:none; margin-top:12px; }
+.json-section.open { display:block; }
+.json-box { background:#080a0d; border:1px solid var(--border); border-radius:10px; padding:20px; font-family:'Courier New',monospace; font-size:11.5px; line-height:1.7; color:#a8d5a2; max-height:380px; overflow-y:auto; white-space:pre; direction:ltr; text-align:left; }
+.json-box::-webkit-scrollbar { width:4px; }
+.json-box::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+.copy-btn { margin-top:10px; background:transparent; border:1px solid var(--border); border-radius:10px; padding:10px 20px; color:var(--muted); font-family:'Cairo',sans-serif; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; width:100%; }
+.copy-btn:hover { border-color:var(--gold-dim); color:var(--gold); }
+.proceed-btn { background:linear-gradient(135deg,var(--gold-dim),var(--gold)); border:none; border-radius:12px; padding:15px 40px; color:#0a0c10; font-family:'Cairo',sans-serif; font-size:15px; font-weight:900; cursor:pointer; transition:all 0.2s; width:100%; margin-top:20px; }
+.proceed-btn:hover { opacity:0.9; transform:translateY(-1px); }
+
+/* ══════════════════════════════════════════════
+   UNIT 3 RESULTS — SERVICE RECOMMENDATION CARDS
+══════════════════════════════════════════════ */
+
+/* AI loading indicator */
+.ai-loading-bar {
+  height:3px; background:var(--border); border-radius:3px; overflow:hidden;
+  margin-top:20px; position:relative;
+}
+.ai-loading-bar::after {
+  content:''; position:absolute; top:0; right:-50%; width:50%; height:100%;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  animation:shimmer 1.5s infinite;
+}
+@keyframes shimmer { from{right:-50%} to{right:150%} }
+
+/* ── Recommendation block ── */
+.rec-block {
+  border:1px solid var(--border); border-radius:16px; overflow:hidden;
+  margin-bottom:20px; transition:border-color 0.3s;
+}
+.rec-block:hover { border-color:var(--gold-dim); }
+
+/* Block type border */
+.rec-block.type-fixed   { border-right:3px solid var(--gold); }
+.rec-block.type-sector  { border-right:3px solid var(--blue); }
+.rec-block.type-anchor  { border-right:3px solid var(--purple); }
+.rec-block.type-rank-1  { border-right:3px solid #f59e0b; }
+.rec-block.type-rank-2  { border-right:3px solid #94a3b8; }
+.rec-block.type-rank-3  { border-right:3px solid #cd7f32; }
+.rec-block.type-rank-n  { border-right:3px solid #374151; }
+
+/* Block header */
+.rec-block-header {
+  display:flex; align-items:center; gap:14px; padding:16px 20px;
+  background:rgba(255,255,255,0.02); border-bottom:1px solid var(--border);
+  cursor:pointer; user-select:none;
+}
+.rec-block-header:hover { background:rgba(201,168,76,0.04); }
+.rec-block-icon { font-size:24px; flex-shrink:0; }
+.rec-block-info { flex:1; }
+.rec-block-name { font-size:15px; font-weight:700; }
+.rec-block-subtitle { font-size:11px; color:var(--muted); font-weight:300; letter-spacing:1px; }
+.rec-block-chevron { color:var(--muted); font-size:16px; transition:transform 0.3s; }
+.rec-block.open .rec-block-chevron { transform:rotate(180deg); }
+
+/* Foundation banner — prepended service */
+.foundation-banner {
+  background:rgba(201,168,76,0.06); border-bottom:1px solid rgba(201,168,76,0.15);
+  padding:12px 20px; display:flex; align-items:center; gap:12px;
+}
+.foundation-icon { font-size:18px; }
+.foundation-label { font-size:11px; letter-spacing:2px; font-weight:700; color:var(--gold-dim); text-transform:uppercase; display:block; margin-bottom:2px; }
+.foundation-name { font-size:13px; font-weight:700; color:var(--gold); }
+.foundation-sub { font-size:11px; color:var(--muted); }
+
+/* Block body */
+.rec-block-body { display:none; }
+.rec-block.open .rec-block-body { display:block; }
+
+/* Featured service card */
+.featured-svc {
+  padding:20px; border-bottom:1px solid var(--border);
+  position:relative; overflow:hidden;
+}
+.featured-svc::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold-dim),transparent);
+}
+.featured-badge {
+  font-size:10px; letter-spacing:2px; font-weight:700; text-transform:uppercase;
+  color:var(--gold-dim); margin-bottom:10px; display:flex; align-items:center; gap:6px;
+}
+.featured-badge::before { content:'★'; color:var(--gold); }
+
+.featured-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:14px; }
+.featured-name { font-size:17px; font-weight:900; line-height:1.3; }
+.featured-id { font-size:11px; color:var(--muted); margin-top:3px; }
+
+/* Confidence ring */
+.confidence-ring {
+  flex-shrink:0; width:54px; height:54px; position:relative;
+  display:flex; align-items:center; justify-content:center;
+}
+.confidence-ring svg { position:absolute; top:0; left:0; transform:rotate(-90deg); }
+.confidence-ring circle { fill:none; stroke-width:3; }
+.confidence-ring .track { stroke:var(--border); }
+.confidence-ring .fill { stroke:var(--gold); stroke-linecap:round; transition:stroke-dashoffset 1s ease; }
+.confidence-num { font-size:13px; font-weight:900; color:var(--gold); }
+.confidence-pct { font-size:9px; color:var(--muted); display:block; text-align:center; margin-top:-2px; }
+
+/* Service meta row */
+.svc-meta-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+.svc-chip { font-size:12px; font-weight:600; padding:4px 12px; border-radius:20px; }
+.chip-price    { background:rgba(39,174,96,0.1);  color:var(--success); border:1px solid rgba(39,174,96,0.25); }
+.chip-duration { background:rgba(59,130,246,0.1); color:var(--blue);    border:1px solid rgba(59,130,246,0.25); }
+.chip-override { background:rgba(139,92,246,0.1); color:var(--purple);  border:1px solid rgba(139,92,246,0.25); font-size:10px; letter-spacing:1px; }
+
+/* Justification */
+.justification-wrap { margin-bottom:14px; }
+.justification-label { font-size:10px; letter-spacing:2px; color:var(--gold-dim); font-weight:700; text-transform:uppercase; margin-bottom:6px; }
+.justification-text {
+  font-size:14px; color:var(--text); line-height:1.7; font-style:italic;
+  padding: 10px 14px; background:rgba(201,168,76,0.04); border-right:2px solid var(--gold-dim);
+  border-radius:0 8px 8px 0;
+}
+.justification-text.loading { color:var(--muted); animation:pulse 1.5s infinite; }
+
+/* KPI & warranty */
+.svc-details { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.svc-detail-box { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
+.svc-detail-label { font-size:10px; letter-spacing:1px; color:var(--muted); text-transform:uppercase; margin-bottom:4px; display:block; }
+.svc-detail-val { font-size:12px; font-weight:600; line-height:1.4; }
+
+/* Supporting services */
+.supporting-wrap { padding:16px 20px; }
+.supporting-label { font-size:10px; letter-spacing:2px; font-weight:700; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+.supporting-list { display:flex; gap:10px; flex-direction:column; }
+.supporting-card {
+  background:var(--surface2); border:1px solid var(--border); border-radius:10px;
+  padding:12px 16px; display:flex; justify-content:space-between; align-items:center; gap:10px;
+  transition:border-color 0.2s;
+}
+.supporting-card:hover { border-color:var(--border); }
+.supp-name { font-size:13px; font-weight:700; }
+.supp-meta { display:flex; gap:6px; align-items:center; flex-shrink:0; }
+.supp-price { font-size:12px; color:var(--success); font-weight:600; }
+.supp-badge { font-size:10px; color:var(--muted); padding:2px 8px; border:1px solid var(--border); border-radius:10px; }
+
+/* ── Summary footer ── */
+.summary-footer {
+  margin-top:28px; padding-top:24px; border-top:1px solid var(--border);
+}
+.summary-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:20px; }
+.summary-box { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:16px; text-align:center; }
+.summary-val { font-size:22px; font-weight:900; color:var(--gold); }
+.summary-label { font-size:11px; color:var(--muted); margin-top:4px; font-weight:300; }
+
+/* ── Responsive ── */
+@media (max-width:560px) {
+  .card { padding:24px 16px; }
+  .options { grid-template-columns:1fr; }
+  .question { font-size:18px; }
+  .svc-details { grid-template-columns:1fr; }
+  .summary-grid { grid-template-columns:1fr 1fr; }
+  .featured-top { flex-direction:column; }
+  .confidence-ring { align-self:flex-start; }
+}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <span class="logo">التشخيص التسويقي</span>
+    <span class="unit-tag" id="unitTag">UNIT 1</span>
+    <span class="session-badge" id="sessionId">جلسة: —</span>
+  </div>
+
+  <!-- ── Progress (Unit 1 only) ── -->
+  <div class="progress-area" id="progressArea" style="display:none">
+    <div class="progress-meta">
+      <span id="progressLabel">السؤال 1 من 15</span>
+      <span id="progressPercent">0%</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="step-dots" id="stepDots"></div>
+  </div>
+
+  <!-- ══ MAIN CARD ══ -->
+  <div class="card" id="mainCard">
+
+    <!-- Greeting -->
+    <div class="screen active" id="screen-greeting">
+      <div class="greeting-screen">
+        <span class="greeting-icon">🎯</span>
+        <div class="greeting-title">محرك التشخيص التسويقي</div>
+        <div class="greeting-sub">
+          بضعة أسئلة دقيقة — تشخيص استراتيجي كامل مع خطة خدمات مُخصصة.<br>
+          الجلسة لا تستغرق أكثر من 3 دقائق.
+        </div>
+        <button class="btn-start" onclick="startSession()">ابدأ التشخيص ←</button>
+      </div>
+    </div>
+
+    <!-- ════ UNIT 1 SCREENS ════ -->
+    <!-- S0: sector -->
+    <div class="screen" id="screen-0">
+      <div class="screen-number">السؤال 1 — القطاع</div>
+      <div class="question">في أي قطاع يعمل عملك؟</div>
+      <div class="options" id="opts-0"></div>
+      <div class="error-msg" id="err-0">يرجى اختيار إجابة للمتابعة</div>
+      <div class="action-bar"><button class="btn-back" onclick="goBack()" disabled>رجوع</button><button class="btn-next" id="next-0" onclick="nextScreen()" disabled>التالي →</button></div>
+    </div>
+    <!-- S1: geo_focus -->
+    <div class="screen" id="screen-1">
+      <div class="screen-number">السؤال 2 — النطاق الجغرافي</div>
+      <div class="question">ما النطاق الجغرافي لعملك؟</div>
+      <div class="options" id="opts-1"></div>
+      <div class="error-msg" id="err-1">يرجى اختيار إجابة للمتابعة</div>
+      <div class="action-bar"><button class="btn-back" onclick="goBack()">رجوع</button><button class="btn-next" id="next-1" onclick="nextScreen()" disabled>التالي →</button></div>
+    </div>
+    <!-- S2: type -->
+    <div class="screen" id="screen-2">
+      <div class="screen-number">السؤال 3 — مرحلة العمل</div>
+      <div class="question">كيف تصف مرحلة عملك الحالية؟</div>
+      <div class="options single-col" id="opts-2"></div>
+      <div class="error-msg" id="err-2">يرجى اختيار إجابة للمتابعة</div>
+      <div class="action-bar"><button class="btn-back" onclick="goBack()">رجوع</button><button class="btn-next" id="next-2" onclick="nextScreen()" disabled>التالي →</button></div>
+    </div>
+    <!-- S3: product_stage (startup only) -->
+    <div class="screen" id="screen-3">
+      <div class="screen-number">السؤال 3أ — مرحلة المنتج</div>
+      <div class="question">في أي مرحلة تحديداً توجد الآن؟</div>
+      <div class="options single-col" id="opts-3"></div>
+      <div class="error-msg" id="err-3">يرجى اختيار إجابة للمتابعة</div>
+      <div class="action-bar"><button class="btn-back" onclick="goBack()">رجوع</button><button class="btn-next" id="next-3" onclick="nextScreen()" disabled>التالي →</button></div>
+    </div>
+    <!-- S4: challenge -->
+    <div class="screen" id="screen-4">
+      <div class="screen-number">السؤال 4 — التحدي الأكبر</div>
+      <div class="question">ما التحدي الأكبر الذي تواجهه الآن؟</div>
+      <div class="options" id="opts-4"></div>
+      <div class="error-msg" id="err-4">يرجى اختيار إجابة للمتابعة</div>
+      <div class="action-bar"><button class="btn-back" onclick="goBack()">رجوع</button><button class="btn-next" id="next-4" onclick="nextScreen()" disabled>التالي →</button></div>
+    </div>
+    <!-- S5: budget -->
+    <div class="screen" id="screen-5">
+      <div class="screen-number">السؤال 5 — الميزانية</div>
+      <div class="question">ما ميزانيتك للتسويق؟</div>
+      <div class="options single-col" id="opts-5"></div>
+      <div class="error-msg" id="err-5">يرجى اختيار إجابة للمتابعة</div>
+      <div class="action-bar"><button class="btn-back" onclick="goBack()">رجوع</button><button class="btn-next" id="next-5" onclick="nextScreen()" disabled>التالي →</button></div>
+    </div>
+    <!-- S6: budget_period -->
+    <div class="screen" id="screen-6">
+      <div class="screen-number">السؤال 5أ — فترة الميزانية</div>
+      <div class="question">هذه الميزانية شهرية أم سنوية؟</div>
+      <div class="options" id="opts-6"></div>
+      <div class="error-msg" id="err-6">يرجى اختيار إجابة للمتابعة</div>
+      <div class="action-bar"><button class="btn-back" onclick="goBack()">رجوع</button><button class="btn-next" id="next-6" onclick="nextScreen()" disabled>التالي →</button></div>
+    </div>
+    <!-- S7: marketing_history -->
+    <div class="screen" id="screen-7">
+      <div class="screen-number">السؤال 6 — التجربة التسويقية</div>
+      <div class="question">ما تجربتك السابقة مع التسويق الرقمي؟</div>
+      <div class="options single-col" id="opts-7"></div>
+      <div class="error-msg" id="err-7">يرجى اختيار إجابة للمتابعة</div>
+      <div class="action-bar"><button class="btn-back" onclick="goBack()">رجوع</button><button class="btn-next" id="next-7" onclick="nextScreen()" disabled>التالي →</button></div>
+    </div>
+    <!-- S8: execution_capacity -->
+    <div class="screen" id="screen-8">
+      <div class="screen-number">السؤال 7 — طاقة التنفيذ</div>
+      <div class="question">من سينفذ معك؟</div>
+      <div class="options single-col" id="opts-8"></div>
+      <div class="error-msg" id="err-8">يرجى اختيار إجابة للمتابعة</div>
+      <div class="action-bar"><button class="btn-back" onclick="goBack()">رجوع</button><button class="btn-next" id="next-8" onclick="nextScreen()" disabled>التالي →</button></div>
+    </div>
+    <!-- S9: current_tools -->
+    <div class="screen" id="screen-9">
+      <div class="screen-number">السؤال 8 — الأدوات الرقمية</div>
+      <div class="question">ما مستوى الأدواتك الرقمية الحالية؟</div>
+      <div class="options single-col" id="opts-9"></div>
+      <div class="error-msg" id="err-9">يرجى اختيار إجابة للمتابعة</div>
+      <div class="action-bar"><button class="btn-back" onclick="goBack()">رجوع</button><button class="btn-next" id="next-9" onclick="nextScreen()" disabled>التالي →</button></div>
+    </div>
+    <!-- S10: main_channel -->
+    <div class="screen" id="screen-10">
+      <div class="screen-number">السؤال 9 — القناة الرئيسية</div>
+      <div class="question">ما القناة الرئيسية التي تأتيك منها العملاء؟</div>
+      <div class="options" id="opts-10"></div>
+      <div class="error-msg" id="err-10">يرجى اختيار إجابة للمتابعة</div>
+      <div class="action-bar"><button class="btn-back" onclick="goBack()">رجوع</button><button class="btn-next" id="next-10" onclick="nextScreen()" disabled>التالي →</button></div>
+    </div>
+    <!-- S11: has_website -->
+    <div class="screen" id="screen-11">
+      <div class="screen-number">السؤال 10 — الموقع الإلكتروني</div>
+      <div class="question">هل لديك موقع إلكتروني جاهز؟</div>
+      <div class="options" id="opts-11"></div>
+      <div class="error-msg" id="err-11">يرجى اختيار إجابة للمتابعة</div>
+      <div class="action-bar"><button class="btn-back" onclick="goBack()">رجوع</button><button class="btn-next" id="next-11" onclick="nextScreen()" disabled>التالي →</button></div>
+    </div>
+    <!-- S12: V — visits (conditional) -->
+    <div class="screen" id="screen-12">
+      <div class="screen-number">السؤال 11 — الزيارات الشهرية</div>
+      <div class="question">كم زيارة شهرية يحصل عليها موقعك؟</div>
+      <div class="question-hint">أدخل رقماً تقريبياً أو اختر نطاقاً من الخيارات</div>
+      <div class="input-group">
+        <input type="number" class="text-input" id="v-input" placeholder="مثال: 2500" min="0" oninput="onNumericInput('v-input',12)">
+        <div class="or-divider">— أو اختر نطاقاً —</div>
+        <div class="options single-col" id="opts-12"></div>
+      </div>
+      <div class="error-msg" id="err-12">يرجى إدخال قيمة أو اختيار نطاق</div>
+      <div class="action-bar"><button class="btn-back" onclick="goBack()">رجوع</button><button class="btn-next" id="next-12" onclick="nextScreen()" disabled>التالي →</button></div>
+    </div>
+    <!-- S13: CR (conditional) -->
+    <div class="screen" id="screen-13">
+      <div class="screen-number">السؤال 12 — معدل التحويل</div>
+      <div class="question">ما نسبة التحويل في موقعك؟</div>
+      <div class="question-hint">نسبة الزوار الذين يُكملون الهدف (شراء، تسجيل، اتصال...)</div>
+      <div class="input-group">
+        <input type="number" class="text-input" id="cr-input" placeholder="مثال: 1.5" min="0" max="100" step="0.1" oninput="onNumericInput('cr-input',13)">
+        <div class="or-divider">— أو اختر نطاقاً —</div>
+        <div class="options single-col" id="opts-13"></div>
+      </div>
+      <div class="error-msg" id="err-13">يرجى إدخال قيمة أو اختيار نطاق</div>
+      <div class="action-bar"><button class="btn-back" onclick="goBack()">رجوع</button><button class="btn-next" id="next-13" onclick="nextScreen()" disabled>التالي →</button></div>
+    </div>
+    <!-- S14: timeline -->
+    <div class="screen" id="screen-14">
+      <div class="screen-number">السؤال 13 — التوقيت</div>
+      <div class="question">متى تريد رؤية النتائج؟</div>
+      <div class="options single-col" id="opts-14"></div>
+      <div class="error-msg" id="err-14">يرجى اختيار إجابة للمتابعة</div>
+      <div class="action-bar"><button class="btn-back" onclick="goBack()">رجوع</button><button class="btn-next" id="next-14" onclick="nextScreen()" disabled>التالي →</button></div>
+    </div>
+    <!-- S15: has_app (conditional) -->
+    <div class="screen" id="screen-15">
+      <div class="screen-number">السؤال 14 — التطبيق الجوال</div>
+      <div class="question">هل لديك تطبيق جوال؟</div>
+      <div class="options" id="opts-15"></div>
+      <div class="error-msg" id="err-15">يرجى اختيار إجابة للمتابعة</div>
+      <div class="action-bar"><button class="btn-back" onclick="goBack()">رجوع</button><button class="btn-next" id="next-15" onclick="completeUnit1()" disabled>إنهاء التشخيص ✓</button></div>
+    </div>
+
+    <!-- ════ PROCESSING — UNIT 2 ════ -->
+    <div class="output-screen" id="screen-proc2">
+      <div class="processing-screen">
+        <span class="processing-icon" style="animation:spin 1.5s linear infinite">⚙️</span>
+        <div class="processing-title">يُحسب التشخيص...</div>
+        <div class="processing-sub">محرك النقاط الحتمي — 10 خطوات + 9 قواعد صارمة</div>
+        <div class="processing-steps">
+          <div class="proc-step active" id="pstep1">⊙ تطبيق جداول القطاع والتحدي والميزانية</div>
+          <div class="proc-step" id="pstep2">⊙ تطبيق معدّلات الزيارات والتحويل والأدوات</div>
+          <div class="proc-step" id="pstep3">⊙ تطبيق القواعد الصارمة التسع</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ UNIT 2 RESULTS ════ -->
+    <div class="output-screen" id="screen-u2results"></div>
+
+    <!-- ════ PROCESSING — UNIT 3 ════ -->
+    <div class="output-screen" id="screen-proc3">
+      <div class="processing-screen">
+        <span class="processing-icon" style="animation:spin 1.5s linear infinite">🤖</span>
+        <div class="processing-title">يُحدَّد أفضل خدمة لكل كتلة...</div>
+        <div class="processing-sub">طبقة تأسيسية ← أولويات التجاوز ← مصفوفة التنفيذ</div>
+        <div class="ai-loading-bar"></div>
+        <div class="processing-steps" style="margin-top:20px">
+          <div class="proc-step active" id="u3step1">⊙ تحديد الخدمة المُبرزة لكل كتلة</div>
+          <div class="proc-step" id="u3step2">⊙ تطبيق الطبقة التأسيسية والخدمات الداعمة</div>
+          <div class="proc-step" id="u3step3">⊙ توليد جمل التبرير المُخصصة (AI)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ UNIT 3 FINAL RESULTS ════ -->
+    <div class="output-screen" id="screen-u3results"></div>
+
+  </div><!-- /card -->
+</div><!-- /wrapper -->
+
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════
+   UNIT 1 — QUESTION ENGINE
+   Screen order note (spec §1.2 resolution):
+   The spec table labels V(5) and CR(6) BEFORE has_website(9), but both
+   are conditioned on has_website=true. This is a spec inconsistency.
+   Resolution: has_website is displayed at position 11 (before V and CR),
+   which is logically required. The spec label numbers are reference IDs,
+   not display positions. The spec note V1-5 confirms: "if has_website=false
+   → skip screens 5 and 6" — meaning has_website must be known first.
+   Timeline (label 8) is placed after the website-data cluster (11,12,13)
+   and before has_app(10) for better UX flow.
+════════════════════════════════════════════ */
+const SCREENS_CONFIG = [
+  { id:0,  varName:'sector', condition:()=>true,
+    options:[{v:'retail',l:'🛍️ تجزئة'},{v:'ecommerce',l:'🛒 تجارة إلكترونية'},{v:'b2b',l:'🤝 B2B / خدمات مؤسسية'},{v:'health',l:'🏥 صحة وطب'},{v:'education',l:'📚 تعليم'},{v:'fnb',l:'🍽️ مطاعم وأغذية'},{v:'manufacturing',l:'🏭 تصنيع'},{v:'realestate',l:'🏢 عقارات'},{v:'professional',l:'💼 خدمات مهنية'},{v:'other',l:'📦 أخرى'}]
+  },
+  { id:1,  varName:'geo_focus', condition:()=>true,
+    options:[{v:'local',l:'📍 محلي — مدينة أو منطقة'},{v:'national',l:'🗺️ وطني — داخل المملكة'},{v:'regional',l:'🌍 إقليمي — الخليج والعالم العربي'},{v:'international',l:'🌐 دولي — خارج المنطقة'}]
+  },
+  { id:2,  varName:'type', condition:()=>true, single:true,
+    options:[{v:'startup',l:'🚀 ناشئة — في المراحل التأسيسية الأولى'},{v:'smb',l:'🏪 صغيرة ومتوسطة — عمل قائم ينمو'},{v:'enterprise',l:'🏛️ كبرى — مؤسسة راسخة في السوق'}]
+  },
+  { id:3,  varName:'product_stage', condition:()=>S.variables.type==='startup', single:true,
+    options:[{v:'idea',l:'💡 فكرة — لم نبدأ التنفيذ بعد'},{v:'pre_launch',l:'🔧 ما قبل الإطلاق — في مرحلة البناء'},{v:'launched_no_revenue',l:'🟡 أُطلقنا — لكن بدون إيراد بعد'},{v:'launched_with_revenue',l:'🟢 أُطلقنا — ولدينا إيراد قائم'}]
+  },
+  { id:4,  varName:'challenge', condition:()=>true,
+    options:[{v:'validation',l:'🔬 التحقق من صحة الفكرة'},{v:'roadmap',l:'🗺️ غياب خارطة الطريق'},{v:'bizplan',l:'📋 بناء خطة العمل'},{v:'awareness',l:'📢 قلة الوعي بالعلامة'},{v:'conversion',l:'💸 ضعف معدل التحويل'},{v:'retention',l:'🔁 الاحتفاظ بالعملاء'},{v:'growth',l:'📈 تسريع النمو'},{v:'cac',l:'💰 تكلفة اكتساب مرتفعة'},{v:'system',l:'⚙️ غياب النظام والأتمتة'}]
+  },
+  { id:5,  varName:'budget', condition:()=>true, single:true,
+    options:[{v:'small',l:'💳 أقل من 5,000 ريال',raw:2500},{v:'medium',l:'💰 5,000 — 15,000 ريال',raw:10000},{v:'medium_large',l:'💎 15,000 — 50,000 ريال',raw:32500},{v:'large',l:'🏦 أكثر من 50,000 ريال',raw:75000}]
+  },
+  { id:6,  varName:'budget_period', condition:()=>true,
+    options:[{v:'monthly',l:'📅 شهرية'},{v:'annual',l:'📆 سنوية (سأحوّلها تلقائياً لشهرية)'}]
+  },
+  { id:7,  varName:'marketing_history', condition:()=>true, single:true,
+    options:[{v:'new',l:'🆕 جديد — لم أجرّب التسويق الرقمي بعد'},{v:'tried_failed',l:'⚠️ جرّبت — لكن النتائج لم تكن مُرضية'},{v:'scaling',l:'🚀 أُوسّع — أريد تكثيف ما يعمل بالفعل'}]
+  },
+  { id:8,  varName:'execution_capacity', condition:()=>true, single:true,
+    options:[{v:'solo',l:'👤 سأنفّذ بنفسي'},{v:'small_team',l:'👥 فريق صغير داخلي (1-5 أشخاص)'},{v:'dedicated_team',l:'🏢 فريق متخصص داخلي'},{v:'agency_external',l:'🤝 وكالة خارجية أو مستقلون'}]
+  },
+  { id:9,  varName:'current_tools', condition:()=>true, single:true,
+    options:[{v:'none',l:'❌ لا أدوات — نبدأ من الصفر'},{v:'basic',l:'🔰 أساسية — بريد وسوشيال فقط'},{v:'intermediate',l:'⚡ متوسطة — CRM أو Analytics'},{v:'advanced',l:'🚀 متقدمة — منظومة رقمية متكاملة'}]
+  },
+  { id:10, varName:'main_channel', condition:()=>true,
+    options:[{v:'website',l:'🌐 الموقع الإلكتروني'},{v:'social',l:'📱 السوشيال ميديا'},{v:'ads',l:'📣 الإعلانات المدفوعة'},{v:'referral',l:'🗣️ التوصيات والإحالة'},{v:'none',l:'❓ لا توجد قناة واضحة بعد'}]
+  },
+  { id:11, varName:'has_website', condition:()=>true,
+    options:[{v:'true',l:'✅ نعم، لديّ موقع جاهز'},{v:'false',l:'❌ لا، لا يوجد موقع بعد'}]
+  },
+  { id:12, varName:'V', condition:()=>S.variables.has_website===true, isNumeric:true,
+    options:[{v:0,l:'⭕ صفر — الموقع جديد جداً'},{v:250,l:'📉 أقل من 500 زيارة / شهر'},{v:2500,l:'📊 500 — 5,000 زيارة / شهر'},{v:7500,l:'📈 أكثر من 5,000 زيارة / شهر'},{v:null,l:'❓ لا أعرف'}]
+  },
+  { id:13, varName:'CR', condition:()=>S.variables.has_website===true, isNumeric:true,
+    options:[{v:0.5,l:'📉 أقل من 1%'},{v:2,l:'📊 من 1% إلى 3%'},{v:4,l:'📈 أكثر من 3%'},{v:null,l:'❓ لا أعرف'}]
+  },
+  { id:14, varName:'timeline', condition:()=>true, single:true,
+    options:[{v:'fast',l:'⚡ سريع — أريد نتائج خلال 60 يوماً'},{v:'sustained',l:'🌱 مستدام — بناء طويل الأمد (6 أشهر+)'}]
+  },
+  { id:15, varName:'has_app', condition:()=>{ const s=S.variables.sector; return s!=='fnb'&&s!=='realestate'; },
+    options:[{v:'true',l:'✅ نعم، لديّ تطبيق جوال'},{v:'false',l:'❌ لا، لا يوجد تطبيق'}]
+  }
+];
+
+/* ── State ── */
+const S = {
+  sessionId: uuid(),
+  currentIndex: -1,
+  history: [],
+  retryCount: {},
+  variables: {
+    sector:null,geo_focus:null,type:null,product_stage:null,
+    challenge:null,budget:null,budget_raw:null,budget_period:null,
+    marketing_history:null,execution_capacity:null,current_tools:null,
+    main_channel:null,V:null,CR:null,timeline:null,has_website:null,has_app:null
+  }
+};
+
+function uuid(){ return 'xxxx-4xxx-yxxx'.replace(/[xy]/g,(c)=>{ const r=Math.random()*16|0; return (c==='x'?r:r&0x3|0x8).toString(16); }); }
+
+function init(){
+  document.getElementById('sessionId').textContent = 'جلسة: ' + S.sessionId.slice(0,8);
+  SCREENS_CONFIG.forEach(sc=>{
+    const el=document.getElementById('opts-'+sc.id); if(!el)return;
+    if(sc.single) el.classList.add('single-col');
+    sc.options.forEach(opt=>{
+      const btn=document.createElement('button');
+      btn.className='option-btn'; btn.textContent=opt.l;
+      btn.dataset.value = opt.v===null?'__null__':String(opt.v);
+      btn.onclick=()=>selectOption(btn,sc.id);
+      el.appendChild(btn);
+    });
+  });
+  buildDots();
+}
+
+function active(){ return SCREENS_CONFIG.filter(sc=>sc.condition()); }
+
+function startSession(){
+  document.getElementById('progressArea').style.display='block';
+  showAt(0);
+}
+
+function showAt(idx){
+  document.querySelectorAll('.screen,.output-screen').forEach(s=>s.classList.remove('active'));
+  S.currentIndex=idx;
+  const sc=active()[idx];
+  document.getElementById('screen-'+sc.id).classList.add('active');
+  document.getElementById('err-'+sc.id)?.classList.remove('visible');
+  const nb=document.getElementById('next-'+sc.id);
+  if(nb) nb.disabled = S.variables[sc.varName]===null;
+  restoreSel(sc); updateProgress(idx);
+}
+
+function restoreSel(sc){
+  const val=S.variables[sc.varName];
+  const c=document.getElementById('opts-'+sc.id); if(!c)return;
+  c.querySelectorAll('.option-btn').forEach(b=>{
+    b.classList.remove('selected');
+    const sv=val===null?'__null__':String(val);
+    if(b.dataset.value===sv) b.classList.add('selected');
+  });
+  if(sc.id===12){const i=document.getElementById('v-input'); if(i&&typeof val==='number')i.value=val;}
+  if(sc.id===13){const i=document.getElementById('cr-input'); if(i&&typeof val==='number')i.value=val;}
+}
+
+function selectOption(btn,screenId){
+  const sc=SCREENS_CONFIG.find(s=>s.id===screenId);
+  const c=document.getElementById('opts-'+screenId);
+  c.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  if(screenId===12) document.getElementById('v-input').value='';
+  if(screenId===13) document.getElementById('cr-input').value='';
+  applyVar(sc, btn.dataset.value==='__null__'?null:btn.dataset.value);
+  const nb=document.getElementById('next-'+screenId); if(nb)nb.disabled=false;
+}
+
+function onNumericInput(inputId,screenId){
+  const inp=document.getElementById(inputId);
+  const sc=SCREENS_CONFIG.find(s=>s.id===screenId);
+  const c=document.getElementById('opts-'+screenId);
+  if(inp.value!==''){
+    c.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('selected'));
+    applyVar(sc,parseFloat(inp.value));
+    document.getElementById('next-'+screenId).disabled=false;
+  } else {
+    if(!c.querySelector('.option-btn.selected')){
+      document.getElementById('next-'+screenId).disabled=true;
+      S.variables[sc.varName]=null;
+    }
+  }
+}
+
+function applyVar(sc,raw){
+  const k=sc.varName;
+  if(raw===null){S.variables[k]=null;return;}
+  if(k==='has_website'||k==='has_app'){S.variables[k]=raw==='true'||raw===true;return;}
+  if(k==='V'||k==='CR'){S.variables[k]=Number(raw);return;}
+  if(k==='budget'){
+    S.variables.budget=raw;
+    const opt=sc.options.find(o=>String(o.v)===String(raw));
+    if(opt)S.variables.budget_raw=opt.raw;
+    return;
+  }
+  S.variables[k]=raw;
+}
+
+function nextScreen(){
+  const all=active(); const sc=all[S.currentIndex];
+  if(S.variables[sc.varName]===null&&!sc.isNumeric){
+    S.retryCount[sc.id]=(S.retryCount[sc.id]||0)+1;
+    if(S.retryCount[sc.id]<=2) document.getElementById('err-'+sc.id)?.classList.add('visible');
+    return;
+  }
+  const nextAll=active(); const nextIdx=S.currentIndex+1;
+  if(nextIdx>=nextAll.length){completeUnit1();return;}
+  S.history.push(S.currentIndex);
+  showAt(nextIdx);
+}
+
+function goBack(){
+  if(!S.history.length)return;
+  const prev=S.history.pop(); S.currentIndex=prev; showAt(prev);
+}
+
+function completeUnit1(){
+  // V1-1: normalise annual budget
+  if(S.variables.budget_period==='annual'&&S.variables.budget_raw!==null){
+    S.variables.budget_raw=Math.round(S.variables.budget_raw/12);
+    const r=S.variables.budget_raw;
+    S.variables.budget=r<5000?'small':r<15000?'medium':r<50000?'medium_large':'large';
+  }
+  showProcessing2();
+}
+
+function updateProgress(idx){
+  const total=active().length; const pct=Math.round((idx/total)*100);
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressLabel').textContent=`السؤال ${idx+1} من ${total}`;
+  document.getElementById('progressPercent').textContent=pct+'%';
+  document.querySelectorAll('.step-dot').forEach((d,i)=>{
+    d.className='step-dot';
+    if(i<idx)d.classList.add('done'); else if(i===idx)d.classList.add('current');
+  });
+}
+function buildDots(){
+  const c=document.getElementById('stepDots'); c.innerHTML='';
+  for(let i=0;i<16;i++){const d=document.createElement('div');d.className='step-dot';c.appendChild(d);}
+}
+
+/* ════════════════════════════════════════════
+   UNIT 2 — SCORING ENGINE (Deterministic)
+════════════════════════════════════════════ */
+const T={
+  sector:{
+    retail:       {ADV:3,VID:2,EML:2,BRD:3,AI:2,INF:4,STR:1,SOC:3},
+    ecommerce:    {ADV:4,VID:2,EML:4,BRD:2,AI:3,INF:4,STR:1,SOC:2},
+    b2b:          {ADV:2,VID:3,EML:3,BRD:2,AI:4,INF:0,STR:4,SOC:1},
+    health:       {ADV:2,VID:4,EML:3,BRD:5,AI:3,INF:3,STR:2,SOC:3},
+    education:    {ADV:3,VID:5,EML:4,BRD:3,AI:3,INF:2,STR:2,SOC:5},
+    fnb:          {ADV:3,VID:4,EML:2,BRD:4,AI:2,INF:5,STR:1,SOC:5},
+    manufacturing:{ADV:1,VID:2,EML:2,BRD:2,AI:5,INF:0,STR:4,SOC:1},
+    realestate:   {ADV:3,VID:3,EML:2,BRD:5,AI:2,INF:2,STR:3,SOC:3},
+    professional: {ADV:2,VID:3,EML:3,BRD:5,AI:3,INF:0,STR:4,SOC:2},
+    other:        {ADV:2,VID:2,EML:2,BRD:2,AI:2,INF:1,STR:3,SOC:2}
+  },
+  challenge:{
+    validation:{ADV:0,VID:1,EML:0,BRD:3,AI:0,INF:0,STR:5,SOC:1},
+    roadmap:   {ADV:1,VID:2,EML:1,BRD:2,AI:1,INF:1,STR:5,SOC:1},
+    bizplan:   {ADV:0,VID:1,EML:0,BRD:3,AI:0,INF:0,STR:5,SOC:1},
+    awareness: {ADV:5,VID:4,EML:1,BRD:3,AI:1,INF:4,STR:1,SOC:4},
+    conversion:{ADV:2,VID:1,EML:2,BRD:1,AI:2,INF:2,STR:1,SOC:1},
+    retention: {ADV:1,VID:2,EML:5,BRD:1,AI:3,INF:1,STR:1,SOC:2},
+    growth:    {ADV:4,VID:3,EML:2,BRD:2,AI:2,INF:4,STR:2,SOC:3},
+    cac:       {ADV:3,VID:1,EML:2,BRD:0,AI:4,INF:0,STR:2,SOC:1},
+    system:    {ADV:1,VID:1,EML:3,BRD:1,AI:5,INF:0,STR:3,SOC:1}
+  },
+  type:{
+    startup:   {ADV:1,VID:3,EML:1,BRD:5,AI:0,INF:0,STR:5,SOC:3},
+    smb:       {ADV:3,VID:3,EML:3,BRD:2,AI:2,INF:3,STR:2,SOC:3},
+    enterprise:{ADV:4,VID:2,EML:4,BRD:1,AI:5,INF:4,STR:3,SOC:2}
+  },
+  budget:{
+    small:       {ADV:1,VID:4,EML:3,BRD:3,AI:0,INF:1,STR:4,SOC:4},
+    medium:      {ADV:3,VID:3,EML:3,BRD:3,AI:1,INF:3,STR:2,SOC:3},
+    medium_large:{ADV:4,VID:2,EML:3,BRD:3,AI:2,INF:4,STR:3,SOC:2},
+    large:       {ADV:4,VID:2,EML:3,BRD:3,AI:5,INF:4,STR:3,SOC:2}
+  },
+  channel:{
+    website: {ADV:2,VID:1,EML:3,BRD:1,AI:3,INF:0,STR:1,SOC:1},
+    social:  {ADV:2,VID:5,EML:1,BRD:3,AI:1,INF:4,STR:1,SOC:5},
+    ads:     {ADV:5,VID:1,EML:2,BRD:0,AI:2,INF:1,STR:1,SOC:1},
+    referral:{ADV:1,VID:3,EML:4,BRD:5,AI:1,INF:3,STR:1,SOC:3},
+    none:    {ADV:3,VID:3,EML:1,BRD:4,AI:2,INF:2,STR:5,SOC:3}
+  },
+  // ─────────────────────────────────────────────────────────────────
+  // V_MODIFIER — spec §2.3 (pseudocode referenced; values aligned with
+  // the authoritative reference implementation in Document 2).
+  //
+  // DESIGN DECISION — zero bucket is intentionally EMPTY:
+  //   The explicit R8 rule fires separately: V=0 && CR=null → STR+3.
+  //   If we also put STR:2 here, V=0 sites would get +5 on STR instead
+  //   of the spec's intended +3 (double-count). The zero bucket must
+  //   remain empty so R8 is the sole handler for this case.
+  //
+  //   low    → traffic exists but is thin → grow organic channels first
+  //   medium → traffic justifies paid ads; email list building viable
+  //   high   → marginal ads boost only; at scale other levers matter more
+  // ─────────────────────────────────────────────────────────────────
+  vMod:{
+    zero:   {},                          // R8 explicit rule handles V=0+CR=null — do NOT score here
+    low:    {ADV:1, SOC:1, STR:2},      // thin traffic → organic social + strategy
+    medium: {ADV:2},                     // decent traffic → paid ads become cost-effective
+    high:   {ADV:1},                     // high traffic → marginal paid boost only
+  },
+  // ─────────────────────────────────────────────────────────────────
+  // CR_MODIFIER — spec §2.3
+  //
+  // DESIGN DECISION — low/medium CR targets the CRO block (always fixed):
+  //   {CRO:3} and {CRO:1} are intentionally directed at CRO. Since CRO
+  //   is a fixed block (R7, always shown), it never enters the selective
+  //   ranking pool, and the add() function silently ignores keys not in
+  //   the scores object. This is not a bug — the effect is that low CR
+  //   reinforces the fixed inclusion of CRO without distorting selective
+  //   block ranking. CRO is already there; no extra boost is needed.
+  //
+  //   high CR → site converts well → safe to scale paid ads + email
+  // ─────────────────────────────────────────────────────────────────
+  crMod:{
+    low:    {CRO:3},                     // CRO fixed → add() ignores gracefully; intentional
+    medium: {CRO:1},                     // same reasoning
+    high:   {ADV:1, EML:1},             // converting well → pour fuel on acquisition + retention
+  },
+  history:{
+    new:         {ADV:0,VID:0,EML:0,BRD:1,AI:0,STR:2,ANL:0},
+    tried_failed:{ADV:1,VID:1,EML:1,BRD:0,AI:1,STR:2,ANL:3},
+    scaling:     {ADV:2,VID:1,EML:1,BRD:0,AI:2,STR:0,ANL:1}
+  },
+  productStage:{
+    idea:                 {STR:3,BRD:2,VID:0,ADV:0,EML:0,AI:0,INF:0},
+    pre_launch:           {STR:1,BRD:2,VID:1,ADV:0,EML:0,AI:0,INF:0},
+    launched_no_revenue:  {STR:0,BRD:1,VID:1,ADV:1,EML:1,AI:0,INF:0},
+    launched_with_revenue:{STR:0,BRD:0,VID:1,ADV:2,EML:1,AI:2,INF:0}
+  },
+  toolsANL:{ none:2, basic:1, intermediate:0, advanced:-1 },
+  toolsAI:  { none:0, basic:1, intermediate:1, advanced:2 }
+};
+
+const BLOCK_META={
+  SEO:{name:'تحسين محركات البحث',     icon:'🔍',range:'#1–#20',   type:'fixed'   },
+  CRO:{name:'تحسين التحويل',           icon:'⚡',range:'#47–#60', type:'fixed'   },
+  ADV:{name:'الإعلانات المدفوعة',      icon:'📣',range:'#33–#46', type:'selective'},
+  VID:{name:'المحتوى والفيديو',        icon:'🎬',range:'#21–#32', type:'selective'},
+  EML:{name:'العلاقة والاحتفاظ',       icon:'📧',range:'#61–#69', type:'selective'},
+  BRD:{name:'الهوية والسمعة',          icon:'🎯',range:'#102–#110',type:'selective'},
+  AI: {name:'الذكاء الاصطناعي',        icon:'🤖',range:'#121–#125',type:'selective'},
+  INF:{name:'التسويق بالمؤثرين',       icon:'👥',range:'#97–#101',type:'selective'},
+  STR:{name:'الاستراتيجية والتخطيط',  icon:'🗺️',range:'#70–#76', type:'selective'},
+  SOC:{name:'إدارة السوشيال ميديا',   icon:'📱',range:'#77–#88', type:'selective'},
+  ECO:{name:'التجارة الإلكترونية',    icon:'🛒',range:'#111–#120',type:'sector'  },
+  ANL:{name:'البيانات والقياس',        icon:'📊',range:'#89–#96', type:'anchor'  }
+};
+
+function getVBucket(v){ return v===0?'zero':v<500?'low':v<=5000?'medium':'high'; }
+function getCRBucket(c){ return c<1?'low':c<=3?'medium':'high'; }
+
+function runUnit2(vars){
+  const ALL=['ADV','VID','EML','BRD','AI','INF','STR','SOC','ANL'];
+  const scores={}; const bk={};
+  ALL.forEach(b=>{ scores[b]=0; bk[b]={sector:0,challenge:0,type:0,budget:0,channel:0,V_modifier:0,CR_modifier:0,history_modifier:0,product_stage_modifier:0,tools_modifier:0}; });
+
+  function add(tbl,key){
+    if(!tbl)return;
+    Object.entries(tbl).forEach(([b,v])=>{ if(scores[b]!==undefined){scores[b]+=v; if(key)bk[b][key]=(bk[b][key]||0)+v;} });
+  }
+
+  add(T.sector[vars.sector],'sector');
+  add(T.challenge[vars.challenge],'challenge');
+  add(T.type[vars.type],'type');
+  add(T.budget[vars.budget],'budget');
+  add(T.channel[vars.main_channel],'channel');
+
+  if(vars.V!==null&&vars.V!==undefined){
+    add(T.vMod[getVBucket(vars.V)],'V_modifier');
+    if(vars.V===0&&(vars.CR===null||vars.CR===undefined)){ scores.STR+=3; bk.STR.V_modifier+=3; }
+  }
+  if(vars.CR!==null&&vars.CR!==undefined) add(T.crMod[getCRBucket(vars.CR)],'CR_modifier');
+  add(T.history[vars.marketing_history],'history_modifier');
+  if(vars.type==='startup'&&vars.product_stage) add(T.productStage[vars.product_stage],'product_stage_modifier');
+
+  const anlMod=T.toolsANL[vars.current_tools]??0;
+  const aiMod =T.toolsAI[vars.current_tools]??0;
+  scores.ANL+=anlMod; bk.ANL.tools_modifier+=anlMod;
+  scores.AI +=aiMod;  bk.AI.tools_modifier +=aiMod;
+
+  const excluded=[]; const warnings=[];
+
+  if(vars.type==='startup'){
+    excluded.push({block_id:'INF',score:scores.INF,reason:'R1: الشركات الناشئة — المؤثرون غير مناسبين للمراحل التأسيسية'});
+    scores.INF=null;
+  }
+  if(vars.type==='startup'){
+    const r2Lifted=vars.product_stage==='launched_with_revenue'&&['medium','medium_large','large'].includes(vars.budget);
+    if(!r2Lifted&&scores.AI!==null){
+      excluded.push({block_id:'AI',score:scores.AI,reason:vars.product_stage!=='launched_with_revenue'?'R2: الذكاء الاصطناعي يتطلب إيراداً قائماً أولاً':'R2: الميزانية الصغيرة لا تكفي'});
+      scores.AI=null;
+    }
+  }
+  if(vars.budget==='small'&&scores.AI!==null){
+    if(!excluded.find(e=>e.block_id==='AI')){
+      excluded.push({block_id:'AI',score:scores.AI,reason:'R3: الميزانية الصغيرة — الحد الأدنى للذكاء الاصطناعي 8,000 ريال'});
+    }
+    scores.AI=null;
+  }
+  if(vars.current_tools==='none'&&vars.budget==='large') warnings.push('ننصح ببناء الأساس التقني قبل الإنفاق الكبير.');
+
+  const sectorBlocks=vars.sector==='ecommerce'?['ECO']:[];
+  const QUOTA={small:2,medium:3,medium_large:4,large:5};
+  const quota=QUOTA[vars.budget]||3;
+  const SELECTIVE=['ADV','VID','EML','BRD','AI','INF','STR','SOC'];
+  const candidates=SELECTIVE.filter(b=>scores[b]!==null)
+    .map(b=>({block_id:b,block_name:BLOCK_META[b].name,icon:BLOCK_META[b].icon,range:BLOCK_META[b].range,score:scores[b],breakdown:{...bk[b]}}))
+    .sort((a,b_)=>b_.score-a.score);
+  const below=candidates.filter(c=>c.score<8);
+  below.forEach(c=>excluded.push({block_id:c.block_id,score:c.score,reason:`R4: النقاط (${c.score}) أقل من الحد الأدنى 8`}));
+  const eligible=candidates.filter(c=>c.score>=8);
+  const selective=eligible.slice(0,quota).map((b,i)=>({...b,rank:i+1}));
+  const anlData={block_id:'ANL',block_name:BLOCK_META.ANL.name,icon:BLOCK_META.ANL.icon,range:BLOCK_META.ANL.range,score:scores.ANL,breakdown:{...bk.ANL}};
+
+  return {
+    session_id:S.sessionId,
+    fixed_blocks:['SEO','CRO'],
+    sector_blocks:sectorBlocks,
+    selective_blocks:selective,
+    excluded_blocks:excluded,
+    anchor_block:anlData,
+    blocks_to_show:quota,
+    warnings,
+    timeline:vars.timeline,
+    // _u2scores: raw scores before hard rules — passed to CRM OUTPUT_B (spec §4.3)
+    variables_passthrough:{...vars, _u2scores:{...scores}}
+  };
+}
+
+/* ════════════════════════════════════════════
+   UNIT 3 — SERVICE SELECTOR (Deterministic + API Justifications)
+════════════════════════════════════════════ */
+
+/* ── Services Database ──
+   Fields: ar, en, p1 (price_from), p2 (price_to), dur, kpi, warranty
+   Only services referenced in matrices. */
+const SVC = {
+  1:  {ar:'بحث الكلمات المفتاحية الاستراتيجي',    en:'Strategic Keyword Research',       p1:3500, p2:6000, dur:'3-5 أيام',      kpi:'زيادة الزيارات العضوية 80%+ خلال 6 أشهر',              warranty:'إعادة عمل مجانية إذا لم تكن 70% من الكلمات قابلة للترتيب'},
+  2:  {ar:'تدقيق تقني لتحسين محركات البحث',        en:'Technical SEO Audit',               p1:5000, p2:9000, dur:'5-7 أيام',      kpi:'تحسين Core Web Vitals إلى 90+',                         warranty:'استرداد 50% إذا لم نكتشف 20+ مشكلة قابلة للإصلاح'},
+  3:  {ar:'تحسين ملف الأعمال على جوجل',            en:'GBP Optimization',                  p1:2000, p2:3500, dur:'2-3 أيام',      kpi:'الظهور في أول 3 نتائج محلية لـ5 كلمات',               warranty:'ضمان ظهور في Local Pack خلال 45 يوم أو استرداد 30%'},
+  6:  {ar:'كتابة مقالات محسّنة لمحركات البحث',     en:'SEO Blog Posts',                    p1:4000, p2:10000,dur:'1-2 أسبوع',    kpi:'زيادة الزيارات العضوية 50-120% خلال 90 يوم',           warranty:'إعادة كتابة مجانية إذا لم تحقق 50% نمو خلال 120 يوم'},
+  9:  {ar:'كتابة نصوص صفحات الموقع',               en:'Website Copywriting',               p1:4500, p2:9000, dur:'5-10 أيام',     kpi:'زيادة معدل التحويل بـ30-60%',                          warranty:'إعادة كتابة مجانية إذا لم يتحسن التحويل بـ20%+'},
+  16: {ar:'إعداد وتهيئة السيو الداخلي',            en:'On-Page SEO Setup',                 p1:7000, p2:16000,dur:'2-4 أسابيع',   kpi:'تحسين متوسط ترتيب الصفحات بـ10-25 موقع',             warranty:'إعادة تحسين مجانية بعد 3 أشهر'},
+  17: {ar:'خدمة التدوين الشهرية',                  en:'Monthly Blogging',                  p1:6000, p2:14000,dur:'مستمر',         kpi:'نمو مستمر 15-25% شهرياً في الزيارات',                 warranty:'ضمان نمو 50%+ خلال 6 أشهر أو شهر مجاني'},
+  19: {ar:'خريطة الكلمات المفتاحية الشاملة',       en:'Master Keyword Map',                p1:3000, p2:7000, dur:'5-7 أيام',      kpi:'500-1,000+ كلمة مصنّفة | 20+ فرصة فورية',             warranty:'تحديث مجاني بعد 6 أشهر'},
+  22: {ar:'إنتاج فيديو إعلاني قصير',               en:'Short Ad Video',                    p1:3000, p2:7000, dur:'3-7 أيام',      kpi:'تحقيق CTR 2%+ | تقليل تكلفة النقرة بـ30-50%',         warranty:'إعادة مونتاج مجانية إذا لم يحقق 1.5% CTR'},
+  26: {ar:'محتوى فيديو للسوشيال ميديا',            en:'Social Video Content',              p1:4000, p2:10000,dur:'مستمر',         kpi:'تحقيق 1M+ مشاهدات شهرياً | زيادة المتابعين 50-150%',  warranty:'ضمان تحقيق 500K مشاهدة خلال 90 يوم'},
+  27: {ar:'فيديو قصة العلامة التجارية',            en:'Brand Story Video',                 p1:12000,p2:28000,dur:'2-4 أسابيع',   kpi:'زيادة Brand Recall بـ80-120%',                         warranty:'ضمان رضا كامل أو إعادة إنتاج'},
+  31: {ar:'تحرير ومونتاج احترافي',                 en:'Video Editing',                     p1:3000, p2:8000, dur:'5-10 أيام',     kpi:'تحسين جودة الفيديوهات | زيادة المشاهدة الكاملة 40-70%',warranty:'إعادة مونتاج مجانية حتى الرضا'},
+  32: {ar:'استراتيجية محتوى الفيديو',              en:'Video Strategy',                    p1:8000, p2:16000,dur:'1-2 أسبوع',    kpi:'تنفيذ 70%+ من الخطة | بناء أصول فيديو مستدامة',       warranty:'استشارة ربع سنوية مجانية'},
+  33: {ar:'حملة إعلانات جوجل للبحث',              en:'Google Search Ads',                 p1:3500, p2:8000, dur:'3-5 أيام إعداد',kpi:'تحقيق CPA أقل من المتوسط بـ30% | 3-6x عائد',         warranty:'ضمان تحقيق 50 نقرة مؤهلة خلال أول 30 يوم'},
+  36: {ar:'حملة إعلانات فيسبوك وإنستجرام',        en:'Meta Ads',                          p1:3500, p2:8000, dur:'3-7 أيام إعداد',kpi:'CTR 1.5%+ | CPA أقل من المنافسين بـ25%',             warranty:'ضمان تحقيق 100 نقرة مؤهلة خلال 30 يوم'},
+  37: {ar:'حملة توليد العملاء المحتملين',          en:'Lead Generation Campaign',          p1:4000, p2:8500, dur:'5-10 أيام',     kpi:'تحقيق CPL أقل من 50 ر.س | تحويل 20-40% من Leads',     warranty:'ضمان توليد 50+ lead مؤهل خلال 60 يوم'},
+  38: {ar:'حملة إعلانات لينكدإن',                 en:'LinkedIn Ads',                      p1:5000, p2:12000,dur:'5-10 أيام',     kpi:'CPL أقل من 150 ر.س | 4-8x عائد',                      warranty:'ضمان توليد 20+ lead مؤسسي خلال 90 يوم'},
+  40: {ar:'اختبار A/B للإعلانات',                 en:'Ad A/B Testing',                    p1:3500, p2:7500, dur:'مستمر',         kpi:'تحسين CTR بـ50-150% خلال 3 أشهر | مضاعفة ROI',        warranty:'ضمان تحسين 30%+ في أي مقياس رئيسي'},
+  42: {ar:'إدارة إعلانات سناب شات',               en:'Snapchat Ads',                      p1:4000, p2:8000, dur:'5-10 أيام',     kpi:'CPM أقل من 15 ر.س | 3-6x عائد',                       warranty:'ضمان تحقيق 100K مشاهدة خلال 30 يوم'},
+  45: {ar:'تدقيق وتحسين الحملات القائمة',         en:'Ads Audit',                         p1:5000, p2:10000,dur:'5-10 أيام',     kpi:'اكتشاف 20+ فرصة تحسين | توفير 30-60% من الإنفاق',     warranty:'ضمان اكتشاف 15+ مشكلة قابلة للإصلاح'},
+  47: {ar:'تدقيق التحويل الشامل',                 en:'CRO & Funnel Audit',                p1:7500, p2:14000,dur:'1-2 أسبوع',    kpi:'تحديد 5-10 نقاط تسرب | خطة رفع CR بـ50-150%',         warranty:'ضمان اكتشاف 15+ فرصة | جلسة شرح 90 دقيقة'},
+  48: {ar:'تصميم صفحة هبوط عالية التحويل',        en:'High-Conversion Landing Page',      p1:5000, p2:12000,dur:'1-2 أسبوع',    kpi:'تحقيق معدل تحويل 8%+ | 6-12x عائد',                   warranty:'إعادة تصميم مجانية إذا لم يتحقق 5% تحويل'},
+  50: {ar:'رسم رحلة العميل الشاملة',              en:'Customer Journey Mapping',          p1:8000, p2:15000,dur:'1-2 أسبوع',    kpi:'تحديد 10-20 نقطة ألم | تقليل نقاط الاحتكاك 40-60%',   warranty:'جلسة متابعة مجانية بعد 90 يوم'},
+  51: {ar:'تحسين تجربة الدفع الكاملة',            en:'Checkout Experience Optimization',  p1:6000, p2:13000,dur:'1-2 أسبوع',    kpi:'تقليل Cart Abandonment بـ30-50% | زيادة المبيعات 40-80%',warranty:'ضمان تحسين 20%+ في معدل إتمام الدفع'},
+  53: {ar:'بناء قمع مبيعات آلي',                  en:'Sales Funnel Automation',           p1:15000,p2:35000,dur:'3-6 أسابيع',   kpi:'تحويل 15-30% من الداخلين للقمع | 10-20x عائد',        warranty:'ضمان عمل التقنية 100% أو إصلاح مجاني'},
+  55: {ar:'تصميم نماذج ذكية',                     en:'Smart Forms',                       p1:2500, p2:5500, dur:'3-7 أيام',      kpi:'زيادة معدل إكمال النماذج بـ100-200%',                  warranty:'ضمان تحسين 50%+ أو إعادة تصميم'},
+  62: {ar:'سلسلة ترحيب آلية',                     en:'Welcome Email Series',              p1:4000, p2:8000, dur:'5-10 أيام',     kpi:'تحويل 20-40% من المشتركين لعملاء | 8-15x عائد',       warranty:'إعادة كتابة مجانية إذا لم يتحقق 15% تحويل'},
+  64: {ar:'نشرة بريدية أسبوعية',                  en:'Weekly Newsletter',                 p1:3000, p2:7000, dur:'مستمر',         kpi:'الحفاظ على Open Rate 25%+',                            warranty:'ضمان تحقيق 20%+ Open Rate'},
+  68: {ar:'تحسين معدل التوصيل',                   en:'Email Deliverability Optimization', p1:4000, p2:8500, dur:'5-10 أيام',     kpi:'زيادة Inbox Rate من 70% إلى 95%+',                    warranty:'ضمان تحقيق 90%+ Inbox Rate'},
+  69: {ar:'استراتيجية تسويق بالبريد شاملة',       en:'Email Marketing Strategy',          p1:7000, p2:14000,dur:'1-2 أسبوع',    kpi:'بناء قناة Email تدر 20-40% من الإيراد',               warranty:'استشارة ربع سنوية مجانية'},
+  70: {ar:'التحقق من صحة الفكرة',                 en:'Idea Validation',                   p1:8000, p2:16000,dur:'2-3 أسابيع',   kpi:'توفير 100,000+ ر.س من خسارة محتملة',                  warranty:'جلسة استشارية متابعة مجانية'},
+  71: {ar:'معرفة عميلك — الشخصية والبروفايل المثالي',en:'Buyer Persona & ICP',           p1:8000, p2:16000,dur:'1-2 أسبوع',    kpi:'رفع دقة الاستهداف الإعلاني بـ40-80%',                 warranty:'مراجعة الشخصيات بعد 90 يوم + ورشة تطبيق'},
+  72: {ar:'استشارة استراتيجية تسويقية',           en:'Marketing Consultation',            p1:3500, p2:7000, dur:'2-3 ساعات',     kpi:'وضوح استراتيجي 100% | خطة 90 يوم',                    warranty:'متابعة Email مجانية 30 يوم'},
+  73: {ar:'تحليل المنافسين الاستراتيجي الشامل',   en:'Competitive Intelligence',          p1:7500, p2:14000,dur:'1-2 أسبوع',    kpi:'اكتشاف 5-10 فرص تمايز | 3+ فجوات فورية',             warranty:'جلسة شرح 90 دقيقة + خطة تطبيق'},
+  74: {ar:'تحليل Jobs to Be Done',                en:'JTBD Analysis',                     p1:4500, p2:10000,dur:'1-2 أسبوع',    kpi:'5-10 Job Stories موثّقة | رسائل بلغة العميل',         warranty:'ورشة تطبيق لترجمة Job Stories لرسائل'},
+  76: {ar:'ورشة عمل استراتيجية',                  en:'Strategy Workshop',                 p1:12000,p2:25000,dur:'يوم كامل',       kpi:'بناء استراتيجية موحدة | OKRs للربع القادم',            warranty:'جلسة متابعة بعد 60 يوم'},
+  78: {ar:'استراتيجية محتوى السوشيال ميديا',      en:'Social Content Strategy',           p1:8000, p2:16000,dur:'1-2 أسبوع',    kpi:'زيادة الوصول العضوي بـ200-400%',                       warranty:'استشارة ربع سنوية مجانية'},
+  79: {ar:'تصميم محتوى بصري للسوشيال ميديا',     en:'Social Graphics Package',           p1:3000, p2:7000, dur:'مستمر',         kpi:'زيادة التفاعل بـ100-200%',                             warranty:'إعادة تصميم مجانية حتى الرضا'},
+  82: {ar:'تدقيق حسابات السوشيال ميديا',          en:'Social Media Audit',                p1:4000, p2:8000, dur:'5-10 أيام',     kpi:'اكتشاف 20+ فرصة تحسين فورية | 5-10x عائد',           warranty:'جلسة شرح مفصلة 90 دقيقة'},
+  84: {ar:'تحسين ملفات السوشيال ميديا',           en:'Profiles Optimization',             p1:2000, p2:4500, dur:'2-4 أيام',      kpi:'زيادة معدل التحويل من زائر لمتابع بـ60-100%',         warranty:'إعادة تحسين مجانية بعد 60 يوم'},
+  89: {ar:'إعداد Google Analytics 4 الكامل',      en:'GA4 Full Setup',                    p1:4500, p2:9000, dur:'5-10 أيام',     kpi:'دقة بيانات 98%+',                                      warranty:'دعم فني 60 يوم مجاني'},
+  90: {ar:'تصميم لوحات تحكم تفاعلية',             en:'Custom Dashboards',                 p1:3500, p2:7500, dur:'5-10 أيام',     kpi:'توفير 10-20 ساعة عمل شهرياً',                          warranty:'تحديثات مجانية 90 يوم'},
+  93: {ar:'إعداد تتبع التحويلات الشامل',          en:'Conversion Tracking Setup',         p1:4000, p2:8500, dur:'5-10 أيام',     kpi:'دقة تتبع 98%+ | تحسين ROAS بـ30-60%',                 warranty:'إصلاح مجاني لأي مشكلة خلال 90 يوم'},
+  94: {ar:'تدقيق بيانات التحليلات',               en:'Analytics Data Audit',              p1:4500, p2:9000, dur:'5-10 أيام',     kpi:'رفع دقة البيانات من 60-70% إلى 98%+',                 warranty:'ضمان دقة 95%+ أو إعادة عمل'},
+  97: {ar:'استراتيجية التسويق بالمؤثرين',        en:'Influencer Strategy',               p1:8000, p2:16000,dur:'1-2 أسبوع',    kpi:'بناء خطة تُحقق 5-8x ROI',                             warranty:'استشارة ربع سنوية مجانية'},
+  98: {ar:'البحث وتحديد المؤثرين',               en:'Influencer Vetting',                p1:5000, p2:10000,dur:'1-2 أسبوع',    kpi:'توفير 40-60% من الميزانية بتجنب المزيفين',            warranty:'ضمان جودة المؤثرين أو استبدال'},
+  99: {ar:'التفاوض وإدارة المؤثرين',             en:'Influencer Management',             p1:6000, p2:14000,dur:'حسب مدة الحملة', kpi:'توفير 30-50% من تكلفة المؤثرين',                      warranty:'ضمان التزام المؤثرين بالعقد'},
+  100:{ar:'حملة مؤثرين صغار',                    en:'Micro-Influencer Campaign',         p1:10000,p2:25000,dur:'1-3 أشهر',     kpi:'تحقيق 1M+ وصول | 6-10x عائد',                         warranty:'ضمان الوصول المتفق عليه أو تعويض'},
+  102:{ar:'استراتيجية تموضع العلامة',            en:'Brand Positioning Strategy',        p1:10000,p2:20000,dur:'2-3 أسابيع',   kpi:'وضوح كامل في التموضع | 10-20x عائد من التمايز',       warranty:'3 جلسات استشارية متابعة'},
+  103:{ar:'تصميم هوية العلامة التجارية',         en:'Brand Identity Design',             p1:12000,p2:28000,dur:'3-4 أسابيع',   kpi:'بناء هوية مميزة لا تُنسى | أصل يدوم 5-10 سنوات',     warranty:'مراجعات غير محدودة حتى الرضا'},
+  104:{ar:'دليل صوت ونبرة العلامة التجارية',     en:'Brand Voice Guide',                 p1:5000, p2:12000,dur:'1-2 أسبوع',    kpi:'اتساق 90%+ في كل الرسائل',                            warranty:'ورشة تدريب مجانية للفريق (ساعتان)'},
+  106:{ar:'تدقيق اتساق العلامة',                 en:'Brand Consistency Audit',           p1:5000, p2:10000,dur:'1-2 أسبوع',    kpi:'تحقيق اتساق 95%+ في كل القنوات',                      warranty:'جلسة شرح مفصلة + قوالب مُحدّثة'},
+  109:{ar:'صوت العميل وتقسيم السوق',             en:'Voice of Customer & Segmentation',  p1:5000, p2:12000,dur:'1-2 أسبوع',    kpi:'100+ اقتباس مصنّف | 3-5 شرائح | قاموس لغة العميل',   warranty:'قاموس لغة العميل جاهز للاستخدام الفوري'},
+  110:{ar:'بناء قصة العلامة التجارية',           en:'Brand Story & Narrative',           p1:4000, p2:9000, dur:'1 أسبوع',      kpi:'3 نسخ بأطوال مختلفة | صياغة جاهزة لـ5 منصات',        warranty:'3 نسخ (طويل/متوسط/قصير)'},
+  111:{ar:'إعداد متجر إلكتروني احترافي',         en:'E-commerce Store Setup',            p1:10000,p2:25000,dur:'2-4 أسابيع',   kpi:'إطلاق متجر احترافي خلال 30 يوم | إيراد فوري',        warranty:'دعم فني 30 يوم مجاني'},
+  112:{ar:'تحسين صفحات المنتجات للتحويل',        en:'Product Page CRO',                  p1:8000, p2:18000,dur:'2-3 أسابيع',   kpi:'زيادة معدل التحويل بـ50-150% | 8-15x عائد',           warranty:'ضمان تحسين 30%+ أو إعادة عمل'},
+  115:{ar:'استراتيجية Upsell & Cross-sell',       en:'Revenue Maximization (Upsell)',     p1:6000, p2:13000,dur:'1-2 أسبوع',    kpi:'زيادة AOV بـ30-50% | 10-20x عائد',                    warranty:'ضمان زيادة AOV بـ20%+ خلال 90 يوم'},
+  118:{ar:'تحسين متجر إلكتروني قائم',            en:'Existing Store Optimization',       p1:5000, p2:12000,dur:'1-2 أسبوع',    kpi:'رفع CR بـ30-60% | تحميل في 2 ثانية',                  warranty:'تقرير مقارنة قبل وبعد + خطة تحسين'},
+  119:{ar:'تجربة التسوق عبر الجوال',             en:'Mobile Commerce UX',                p1:4000, p2:9000, dur:'1-2 أسبوع',    kpi:'رفع CR الجوال بـ40-70%',                               warranty:'اختبار على 5+ أجهزة مختلفة'},
+  122:{ar:'المساعد الذكي لخدمة العملاء',         en:'Smart Customer Assistant (AI-1)',   p1:8000, p2:18000,dur:'7 أيام عمل',   kpi:'رد أقل من 3 ثوانٍ | تخفيض الرد اليدوي 40-60%',       warranty:'إصلاح مجاني 30 يوماً'},
+  123:{ar:'الموظف الرقمي الذكي',                 en:'Autonomous AI Agent (AI-2)',        p1:9000, p2:20000,dur:'7-12 يوم عمل', kpi:'توفير 15-20 ساعة أسبوعياً',                           warranty:'ضمان أداء 90 يوماً بمعايير مكتوبة'},
+  124:{ar:'الذاكرة الذكية لشركتك',               en:'AI Knowledge Base (AI-3)',          p1:12000,p2:25000,dur:'7-14 يوم عمل', kpi:'دقة 95%+ | صفر معلومات مختلقة',                       warranty:'ضمان دقة 95% وإلا إعادة بناء مجانية'}
+};
+
+/* ── Featured service matrices ── */
+// Priority 3 (base): execution_capacity
+const EXEC_MATRIX = {
+  SEO: {solo:1,small_team:6,dedicated_team:16,agency_external:2},
+  CRO: {solo:55,small_team:47,dedicated_team:53,agency_external:47},
+  ADV: {solo:33,small_team:36,dedicated_team:37,agency_external:45},
+  VID: {solo:22,small_team:26,dedicated_team:32,agency_external:31},
+  EML: {solo:62,small_team:64,dedicated_team:69,agency_external:68},
+  STR: {solo:72,small_team:73,dedicated_team:76,agency_external:72},
+  SOC: {solo:84,small_team:79,dedicated_team:78,agency_external:82},
+  ANL: {solo:89,small_team:90,dedicated_team:93,agency_external:94},
+  INF: {solo:100,small_team:98,dedicated_team:97,agency_external:99},
+  BRD: {solo:104,small_team:102,dedicated_team:103,agency_external:106},
+  ECO: {solo:118,small_team:111,dedicated_team:112,agency_external:118},
+  AI:  {solo:122,small_team:122,dedicated_team:123,agency_external:124}
+};
+
+// Priority 2: geo_focus (SEO, ADV, INF, SOC only)
+const GEO_OVERRIDE = {
+  SEO: {local:3, national:2, regional:16, international:16},
+  ADV: {local:42, national:36, regional:33, international:38},
+  INF: {local:100, national:98, regional:99, international:97},
+  SOC: {local:84, national:78} // regional/international → fall back
+};
+
+// Priority 1 (highest): product_stage — startup only
+// null means "do not show this block"
+const PS_OVERRIDE = {
+  STR: {idea:70, pre_launch:71, launched_no_revenue:70, launched_with_revenue:72},
+  BRD: {idea:102, pre_launch:103, launched_no_revenue:102, launched_with_revenue:102},
+  CRO: {idea:50, pre_launch:48, launched_no_revenue:47, launched_with_revenue:51},
+  SEO: {idea:1, pre_launch:9, launched_no_revenue:6, launched_with_revenue:1},
+  VID: {idea:null, pre_launch:27, launched_no_revenue:26, launched_with_revenue:22},
+  ADV: {idea:null, pre_launch:null, launched_no_revenue:36, launched_with_revenue:36},
+  EML: {idea:null, pre_launch:null, launched_no_revenue:62, launched_with_revenue:64}
+};
+
+// Supporting services pool per block, ordered by timeline
+const SUPPORT_POOL = {
+  SEO: {fast:[3,1,16,17],    sustained:[1,17,16,6]},
+  CRO: {fast:[48,55,50],     sustained:[53,50,48]},
+  ADV: {fast:[36,33,37],     sustained:[40,36,45]},
+  VID: {fast:[22,31,26],     sustained:[17,32,26]},
+  EML: {fast:[62,68,64],     sustained:[69,64,62]},
+  STR: {fast:[72,73,74],     sustained:[73,76,72]},
+  SOC: {fast:[84,79,82],     sustained:[78,82,84]},
+  ANL: {fast:[89,93,90],     sustained:[94,90,93]},
+  INF: {fast:[100,98,99],    sustained:[97,99,100]},
+  BRD: {fast:[104,106,110],  sustained:[102,103,110]},
+  ECO: {fast:[118,119,112],  sustained:[112,115,118]},
+  AI:  {fast:[122,123,124],  sustained:[123,124,122]}
+};
+
+/* ── Foundation layer check ── */
+function checkFoundation(blockId, vars){
+  if(blockId==='SEO' && ['new','tried_failed'].includes(vars.marketing_history)) return 19;
+  if(blockId==='STR' && ['awareness','conversion'].includes(vars.challenge)) return 74;
+  if(blockId==='BRD' && ['smb','enterprise'].includes(vars.type) && vars.marketing_history!=='new') return 109;
+  return null;
+}
+
+/* ── Select featured service — 3-layer priority ──
+ *
+ * Priority order (highest → lowest):
+ *   1. product_stage override  (§3.4 — startup only, overrides everything)
+ *   2. geo_focus override      (§3.3 — SEO, ADV, INF, SOC only)
+ *   3. execution_capacity      (§3.2 — base fallback for all blocks)
+ *
+ * Spec conflict — BRD + idea/pre_launch:
+ *   §3.4 table says: BRD+idea=#102, BRD+pre_launch=#103
+ *   §3.0 says: product_stage=idea/pre_launch → BRD.featured_service=#110
+ *   RESOLUTION: §3.0 (Foundation Layer) is more specific and named
+ *   "Brand Story & Narrative" as the entry point for early-stage brands.
+ *   We apply §3.0 AFTER §3.4 fires, overriding 102/103 → 110.
+ */
+function selectFeatured(blockId, vars){
+  let featuredId = null;
+  let overrideType = 'execution'; // track which layer fired
+
+  // Layer 1: product_stage (startup only — highest priority)
+  if(vars.type==='startup' && vars.product_stage && PS_OVERRIDE[blockId]){
+    const ps = PS_OVERRIDE[blockId][vars.product_stage];
+    if(ps===null) return {id:null, overrideType:'product_stage_hide'}; // hidden block
+    if(ps!==undefined){ featuredId=ps; overrideType='product_stage'; }
+  }
+
+  // Layer 2: geo_focus (only for SEO, ADV, INF, SOC — if not already overridden)
+  if(!featuredId && GEO_OVERRIDE[blockId]){
+    const geo = GEO_OVERRIDE[blockId][vars.geo_focus];
+    if(geo){ featuredId=geo; overrideType='geo_focus'; }
+  }
+
+  // Layer 3: execution_capacity (base fallback)
+  if(!featuredId){
+    featuredId = EXEC_MATRIX[blockId]?.[vars.execution_capacity];
+    overrideType='execution';
+  }
+
+  // Special: if BRD and product_stage=idea/pre_launch → featured=110 (Brand Story)
+  if(blockId==='BRD' && vars.type==='startup' && ['idea','pre_launch'].includes(vars.product_stage) && overrideType==='product_stage'){
+    // PS_OVERRIDE already handles BRD. idea→102, pre_launch→103. #110 is set separately per spec §3.0
+    // §3.0 says: if product_stage=idea/pre_launch → BRD.featured_service=#110
+    featuredId=110; overrideType='product_stage';
+  }
+
+  return {id:featuredId, overrideType};
+}
+
+/* ── Select supporting services ── */
+function selectSupporting(blockId, vars, featuredId){
+  const tl = vars.timeline==='fast'?'fast':'sustained';
+  const pool = SUPPORT_POOL[blockId]?.[tl] || [];
+  // Exclude the featured service from supporting list
+  return pool.filter(id=>id!==featuredId).slice(0,2);
+}
+
+/* ── Compute confidence score ── */
+function computeConfidence(blockId, vars, overrideType){
+  let score = 65;
+  if(overrideType==='product_stage') score+=20;
+  else if(overrideType==='geo_focus') score+=12;
+  else score+=8;
+  // Challenge-block bonus
+  const CBO={awareness:['ADV','SOC','INF','VID'],conversion:['CRO','ADV','EML'],
+              retention:['EML','SOC'],growth:['ADV','VID','ANL'],cac:['ADV','ANL'],
+              system:['AI','ANL'],validation:['STR'],roadmap:['STR'],bizplan:['STR']};
+  if((CBO[vars.challenge]||[]).includes(blockId)) score+=7;
+  return Math.min(97,score);
+}
+
+/* ── Main Unit 3 selector ── */
+function runUnit3(u2, vars){
+  // Build ordered block list: fixed → sector → selective → anchor
+  const allBlocks = [
+    ...u2.fixed_blocks.map(id=>({block_id:id,type:'fixed',rank:null,score:null})),
+    ...u2.sector_blocks.map(id=>({block_id:id,type:'sector',rank:null,score:null})),
+    ...u2.selective_blocks.map(b=>({block_id:b.block_id,type:'rank',rank:b.rank,score:b.score})),
+    {block_id:'ANL',type:'anchor',rank:null,score:u2.anchor_block.score}
+  ];
+
+  const result_blocks = [];
+  let totalPriceMin = 0, totalPriceMax = 0;
+
+  for(const blk of allBlocks){
+    const {id:featuredId, overrideType} = selectFeatured(blk.block_id, vars);
+
+    // Skip if block hidden by product_stage (e.g. VID for "idea" stage startup)
+    if(overrideType==='product_stage_hide') continue;
+
+    // Foundation service for this block
+    const foundationId = checkFoundation(blk.block_id, vars);
+
+    // Supporting services
+    const supportingIds = selectSupporting(blk.block_id, vars, featuredId);
+
+    const featuredSvc = SVC[featuredId];
+    if(!featuredSvc) continue; // safety guard
+
+    const confidence = computeConfidence(blk.block_id, vars, overrideType);
+
+    if(featuredSvc.p1) totalPriceMin += featuredSvc.p1;
+    if(featuredSvc.p2) totalPriceMax += featuredSvc.p2;
+
+    result_blocks.push({
+      position: result_blocks.length+1,
+      block_id: blk.block_id,
+      block_name: BLOCK_META[blk.block_id].name,
+      block_icon: BLOCK_META[blk.block_id].icon,
+      block_type: blk.type,
+      block_rank: blk.rank,
+      block_score: blk.score,
+      featured_service: {
+        id: featuredId,
+        name_ar: featuredSvc.ar,
+        name_en: featuredSvc.en,
+        price_from: featuredSvc.p1,
+        price_to: featuredSvc.p2,
+        duration: featuredSvc.dur,
+        kpi: featuredSvc.kpi,
+        warranty: featuredSvc.warranty,
+        justification: null, // filled by API
+        confidence_match: confidence,
+        override_type: overrideType
+      },
+      foundation_service: foundationId ? {
+        id: foundationId,
+        name_ar: SVC[foundationId]?.ar,
+        price_from: SVC[foundationId]?.p1,
+        price_to: SVC[foundationId]?.p2
+      } : null,
+      supporting_services: supportingIds.map(id=>({
+        id, name_ar:SVC[id]?.ar, price_from:SVC[id]?.p1, price_to:SVC[id]?.p2
+      }))
+    });
+  }
+
+  // Compute overall confidence
+  const overallConf = result_blocks.length
+    ? Math.round(result_blocks.reduce((s,b)=>s+b.featured_service.confidence_match,0)/result_blocks.length)
+    : 0;
+
+  return {
+    session_id: S.sessionId,
+    result_blocks,
+    total_blocks_shown: result_blocks.length,
+    collapsed_blocks: Math.max(0,result_blocks.length-3), // top 3 open, rest collapsed
+    confidence_overall: overallConf,
+    total_investment: {min:totalPriceMin, max:totalPriceMax},
+    timeline: vars.timeline
+  };
+}
+
+/* ── Justification generator — Anthropic API ── */
+async function generateJustifications(u3Result, vars){
+  const SECTOR_LBL={retail:'التجزئة',ecommerce:'التجارة الإلكترونية',b2b:'B2B والخدمات المؤسسية',health:'الصحة والطب',education:'التعليم',fnb:'المطاعم والأغذية',manufacturing:'التصنيع',realestate:'العقارات',professional:'الخدمات المهنية',other:'أخرى'};
+  const CHALLENGE_LBL={validation:'التحقق من صحة الفكرة',roadmap:'غياب خارطة الطريق',bizplan:'بناء خطة العمل',awareness:'ضعف الوعي بالعلامة',conversion:'ضعف معدل التحويل',retention:'ضعف الاحتفاظ بالعملاء',growth:'تسريع النمو',cac:'ارتفاع تكلفة الاكتساب',system:'غياب الأنظمة والأتمتة'};
+  const TYPE_LBL={startup:'ناشئة',smb:'صغيرة ومتوسطة',enterprise:'مؤسسة كبرى'};
+
+  const blockList = u3Result.result_blocks.map(b=>({
+    block_id:b.block_id,
+    block_name:b.block_name,
+    service_name:b.featured_service.name_ar,
+    service_id:b.featured_service.id
+  }));
+
+  const prompt = `أنت كاتب تسويقي عربي متخصص. ستُقرأ بيانات عميل وقائمة توصيات خدمية، ثم تكتب جملة تبرير واحدة فقط لكل توصية.
+
+بيانات العميل:
+- القطاع: ${SECTOR_LBL[vars.sector]||vars.sector}
+- التحدي الأكبر: ${CHALLENGE_LBL[vars.challenge]||vars.challenge}
+- نوع العمل: ${TYPE_LBL[vars.type]||vars.type}
+- النطاق الجغرافي: ${vars.geo_focus}
+- مرحلة المنتج: ${vars.product_stage||'—'}
+
+التوصيات:
+${blockList.map(b=>`- ${b.block_id}: ${b.block_name} → الخدمة: "${b.service_name}"`).join('\n')}
+
+التعليمات:
+1. اكتب جملة عربية واحدة لكل block_id.
+2. يجب أن تبدأ كل جملة بـ "نُوصي بها لأن".
+3. تُخاطب الجملة ألم العميل أو تحديه المحدد، وتذكر القطاع أو السياق إن أمكن.
+4. لا تصف الخدمة نفسها، بل الحاجة التي تُعالجها.
+5. أعِد JSON فقط لا غير، بهذا الشكل بالضبط:
+{"SEO":"نُوصي بها لأن...","CRO":"نُوصي بها لأن...",${blockList.map(b=>`"${b.block_id}":"..."`).join(',')}}
+لا تكتب أي نص خارج JSON.`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await resp.json();
+    const text = data.content?.map(c=>c.text||'').join('');
+    // Strip markdown fences if present
+    const clean = text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    // Inject justifications into result blocks
+    u3Result.result_blocks.forEach(b=>{
+      if(parsed[b.block_id]) b.featured_service.justification = parsed[b.block_id];
+    });
+  } catch(e){
+    // Graceful fallback: template-based justifications
+    u3Result.result_blocks.forEach(b=>{
+      const challenge = CHALLENGE_LBL[vars.challenge]||'تحديك الحالي';
+      const sector = SECTOR_LBL[vars.sector]||'مجالك';
+      b.featured_service.justification = `نُوصي بها لأن ${b.block_name} هو المفتاح المباشر لمعالجة ${challenge} في سياق ${sector}.`;
+    });
+  }
+  return u3Result;
+}
+
+/* ════════════════════════════════════════════
+   PIPELINE CONTROLLER
+════════════════════════════════════════════ */
+
+/* ── OUTPUT_B: CRM JSON — spec §4.3 ──────────────────────────────────
+ * Generates the full CRM lead record from Unit 3 output + original vars.
+ * All 17 variables are passed through in profile (including budget_period
+ * which was missing from the reference implementation — deviation fixed).
+ * follow_up_script follows the spec pattern: "{sector}_{challenge}_template"
+ * top_block = first selective block (highest ranked after SEO/CRO).
+ * confidence_overall excludes the ANL anchor block (spec §4.5 note).
+ * ─────────────────────────────────────────────────────────────────── */
+function buildCRMOutput(u3, vars){
+  // Collect all featured service IDs (excluding anchor for budget range)
+  const allFeatured = u3.result_blocks
+    .filter(b=>b.block_type!=='anchor')
+    .map(b=>b.featured_service)
+    .filter(Boolean);
+
+  // Investment range from featured services only (not anchor ANL)
+  const minBudget = allFeatured.reduce((s,f)=>s+(f.price_from||0),0);
+  const maxBudget = allFeatured.reduce((s,f)=>s+(f.price_to||0),0);
+  const budgetRange = `${minBudget.toLocaleString()} – ${maxBudget.toLocaleString()} ر.س`;
+
+  // Top block = first selective block in ranked order
+  const topBlock = u3.result_blocks.find(b=>b.block_type==='rank')?.block_id
+                || u3.result_blocks.find(b=>b.block_type==='fixed')?.block_id;
+
+  // confidence_overall = average of non-anchor blocks (spec §4.5)
+  const confBlocks = u3.result_blocks.filter(b=>b.block_type!=='anchor');
+  const confOverall = confBlocks.length
+    ? Math.round(confBlocks.reduce((s,b)=>s+b.featured_service.confidence_match,0)/confBlocks.length)
+    : u3.confidence_overall;
+
+  const crm = {
+    lead_data: {
+      session_id:  u3.session_id,
+      created_at:  new Date().toISOString(),
+      source:      'web',
+      contact: {
+        company_name: null,   // populated after CTA-1 / CTA-2 form
+        contact_name:  null,
+        phone:         null,
+        email:         null
+      },
+      profile: {
+        // All 17 diagnostic variables — spec §1.4 output schema
+        sector:             vars.sector,
+        type:               vars.type,
+        geo_focus:          vars.geo_focus,
+        challenge:          vars.challenge,
+        budget:             vars.budget,
+        budget_raw:         vars.budget_raw,
+        budget_period:      vars.budget_period,     // ← was missing from ref. impl., fixed
+        execution_capacity: vars.execution_capacity,
+        current_tools:      vars.current_tools,
+        marketing_history:  vars.marketing_history,
+        timeline:           vars.timeline,
+        has_website:        vars.has_website,
+        has_app:            vars.has_app ?? null,
+        product_stage:      vars.product_stage ?? null,
+        V:                  vars.V  ?? null,
+        CR:                 vars.CR ?? null,
+        main_channel:       vars.main_channel
+      },
+      diagnosis: {
+        confidence_overall:     confOverall,
+        blocks_shown:           u3.total_blocks_shown,
+        top_block:              topBlock,
+        recommended_services:   u3.result_blocks.map(b=>b.featured_service?.id).filter(Boolean),
+        featured_services_ids:  allFeatured.map(f=>f.id),
+        estimated_budget_range: budgetRange
+      }
+    },
+    crm_fields: {
+      lead_score:       confOverall,
+      lead_stage:       'MQL',
+      priority_tag:     `${vars.sector}-${vars.challenge}-${vars.execution_capacity}`,
+      assigned_to:      null,
+      // Spec §4.3: follow_up_script = "{sector}_{challenge}_template"
+      follow_up_script: `${vars.sector}_${vars.challenge}_template`
+    },
+    // Raw Unit 2 scores passthrough — useful for sales team analytics
+    _score_breakdown: vars._u2scores || null
+  };
+
+  return crm;
+}
+let _u2Result = null;
+
+function showProcessing2(){
+  document.querySelectorAll('.screen,.output-screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-proc2').classList.add('active');
+  document.getElementById('progressArea').style.display='none';
+  document.getElementById('unitTag').textContent='UNIT 2';
+  // Animate steps
+  setTimeout(()=>{ setStep('pstep1','done'); setStep('pstep2','active'); },400);
+  setTimeout(()=>{ setStep('pstep2','done'); setStep('pstep3','active'); },800);
+  setTimeout(()=>{
+    setStep('pstep3','done');
+    _u2Result = runUnit2(S.variables);
+    renderU2Results(_u2Result);
+  },1200);
+}
+
+function setStep(id,cls){
+  const el=document.getElementById(id); if(!el)return;
+  el.className='proc-step'; el.classList.add(cls);
+}
+
+function proceedToUnit3(){
+  document.querySelectorAll('.screen,.output-screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-proc3').classList.add('active');
+  document.getElementById('unitTag').textContent='UNIT 3';
+
+  // Animate Unit 3 steps
+  setTimeout(()=>{ setStep('u3step1','done'); setStep('u3step2','active'); },500);
+  setTimeout(()=>{
+    const u3 = runUnit3(_u2Result, S.variables); // deterministic selection
+    setStep('u3step2','done'); setStep('u3step3','active');
+    // Call API for justifications, then build CRM OUTPUT_B
+    generateJustifications(u3, S.variables).then(u3Final=>{
+      setStep('u3step3','done');
+      // Build OUTPUT_B CRM JSON (spec §4.3) — must come AFTER justifications
+      // so that the session_id and all block data are finalised
+      const crmOutput = buildCRMOutput(u3Final, S.variables);
+      window.__crmJSON = JSON.stringify(crmOutput, null, 2);
+      setTimeout(()=>renderU3Results(u3Final), 300);
+    });
+  },1000);
+}
+
+/* ════════════════════════════════════════════
+   UNIT 2 RENDERER
+════════════════════════════════════════════ */
+const BK_LABELS={sector:'القطاع',challenge:'التحدي',type:'نوع العمل',budget:'الميزانية',channel:'القناة',V_modifier:'الزيارات',CR_modifier:'التحويل',history_modifier:'التجربة',product_stage_modifier:'مرحلة المنتج',tools_modifier:'الأدوات'};
+
+function renderU2Results(r){
+  const timelineClass=r.timeline==='fast'?'fast':'sustained';
+  const timelineLabel=r.timeline==='fast'?'⚡ خلال 60 يوماً':'🌱 6 أشهر+';
+  const MAX=35;
+
+  function blockCard({block_id,block_name,icon,range,score,breakdown,cardClass,badgeHtml,showBar}){
+    const pct=score!==null?Math.min(100,Math.round(score/MAX*100)):0;
+    const bkId='bk_'+block_id;
+    let bkHtml='';
+    if(breakdown){
+      bkHtml=`<button class="breakdown-toggle" onclick="toggleBK('${bkId}')">▾ تفاصيل النقاط</button>
+      <div class="breakdown-panel" id="${bkId}">`;
+      Object.entries(breakdown).forEach(([k,v])=>{
+        if(v===0)return;
+        const cls=v>0?'pos':v<0?'neg':'zero';
+        bkHtml+=`<div class="bk-row"><span class="bk-label">${BK_LABELS[k]||k}</span><span class="bk-val ${cls}">${v>0?'+':''}${v}</span></div>`;
+      });
+      bkHtml+=`</div>`;
+    }
+    return `<div class="block-card ${cardClass}">
+      <div class="block-card-inner">
+        <div class="block-icon">${icon}</div>
+        <div class="block-info"><div class="block-name">${block_name}</div><div class="block-range">${range}</div></div>
+        ${badgeHtml}
+        ${score!==null?`<div class="block-score-wrap"><div class="block-score-num">${score}</div><div class="block-score-label">نقطة</div></div>`:''}
+      </div>
+      ${showBar&&score!==null?`<div class="score-bar-wrap"><div class="score-bar-track"><div class="score-bar-fill" data-pct="${pct}" style="width:0%"></div></div></div>`:''}
+      ${bkHtml}
+    </div>`;
+  }
+
+  let html=`
+  <div class="results-header">
+    <div class="results-icon">✓</div>
+    <div><div class="results-title">نتائج التشخيص</div><div class="results-sub">الوحدة الثانية — محرك النقاط الحتمي</div></div>
+    <div class="results-meta">
+      <span class="meta-chip ${timelineClass}">${timelineLabel}</span>
+      <span class="meta-chip quota">${r.blocks_to_show} كتل انتقائية</span>
+    </div>
+  </div>`;
+
+  if(r.warnings.length) html+=`<div class="warning-box visible">⚠️ <span>${r.warnings.join(' ')}</span></div>`;
+
+  html+=`<div class="section-label">ثابتة — تظهر دائماً</div><div class="blocks-list">`;
+  r.fixed_blocks.forEach(id=>{
+    const m=BLOCK_META[id];
+    html+=blockCard({block_id:id,block_name:m.name,icon:m.icon,range:m.range,score:null,cardClass:'fixed-block',badgeHtml:`<span class="block-badge badge-fixed">ثابت</span>`,showBar:false});
+  });
+  html+=`</div>`;
+
+  if(r.sector_blocks.length){
+    html+=`<div class="section-label">قطاعي — مُضاف تلقائياً</div><div class="blocks-list">`;
+    r.sector_blocks.forEach(id=>{
+      const m=BLOCK_META[id];
+      html+=blockCard({block_id:id,block_name:m.name,icon:m.icon,range:m.range,score:null,cardClass:'sector-block',badgeHtml:`<span class="block-badge badge-sector">قطاعي</span>`,showBar:false});
+    });
+    html+=`</div>`;
+  }
+
+  if(r.selective_blocks.length){
+    html+=`<div class="section-label">انتقائية — مرتّبة بالنقاط</div><div class="blocks-list">`;
+    r.selective_blocks.forEach(b=>{
+      const rk=b.rank===1?'r1':b.rank===2?'r2':b.rank===3?'r3':'rn';
+      const cc=b.rank===1?'rank-1':b.rank===2?'rank-2':b.rank===3?'rank-3':'rank-other';
+      html+=blockCard({block_id:b.block_id,block_name:b.block_name,icon:b.icon,range:b.range,score:b.score,breakdown:b.breakdown,cardClass:cc,badgeHtml:`<div class="badge-rank ${rk}">${b.rank}</div>`,showBar:true});
+    });
+    html+=`</div>`;
+  }
+
+  const anl=r.anchor_block;
+  html+=`<div class="section-label">مرساة — دائماً في الأسفل</div><div class="blocks-list">`;
+  html+=blockCard({block_id:'ANL',block_name:anl.block_name,icon:anl.icon,range:anl.range,score:anl.score,breakdown:anl.breakdown,cardClass:'anchor-block',badgeHtml:`<span class="block-badge badge-anchor">مرساة</span>`,showBar:true});
+  html+=`</div>`;
+
+  if(r.excluded_blocks.length){
+    html+=`<button class="excluded-toggle" onclick="toggleExcluded(this)">▼ الكتل المستبعدة (${r.excluded_blocks.length})</button>
+    <div class="excluded-list">`;
+    r.excluded_blocks.forEach(ex=>{
+      const m=BLOCK_META[ex.block_id];
+      html+=`<div class="excluded-item"><span class="excluded-name">${m?m.icon:''} ${m?m.name:ex.block_id}</span><span class="excluded-reason">${ex.reason}</span><span class="excluded-score">${ex.score!==null?ex.score+'ن':'—'}</span></div>`;
+    });
+    html+=`</div>`;
+  }
+
+  const j2=JSON.stringify(r,null,2);
+  window.__u2JSON=j2;
+  html+=`<button class="json-toggle" onclick="toggleJSON(this)">{ } عرض JSON للوحدة الثالثة</button>
+  <div class="json-section"><div class="json-box">${escHtml(j2)}</div>
+  <button class="copy-btn" onclick="copyJSON('__u2JSON')">📋 نسخ JSON</button></div>
+  <button class="proceed-btn" onclick="proceedToUnit3()">المتابعة → الوحدة الثالثة: اختيار الخدمات</button>`;
+
+  const el=document.getElementById('screen-u2results');
+  el.innerHTML=html;
+  document.querySelectorAll('.screen,.output-screen').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  setTimeout(()=>{ document.querySelectorAll('.score-bar-fill').forEach(b=>{ b.style.width=b.dataset.pct+'%'; }); },100);
+}
+
+/* ════════════════════════════════════════════
+   UNIT 3 RENDERER
+════════════════════════════════════════════ */
+function renderU3Results(u3){
+  const TYPE_CARD_CLASS={fixed:'type-fixed',sector:'type-sector',anchor:'type-anchor',rank:'type-rank-'};
+  const OVERRIDE_LABELS={product_stage:'تجاوز مرحلة المنتج',geo_focus:'تجاوز جغرافي',execution:'مصفوفة التنفيذ'};
+
+  let html=`
+  <div class="results-header">
+    <div class="results-icon" style="background:rgba(201,168,76,0.12);border-color:rgba(201,168,76,0.3)">⭐</div>
+    <div>
+      <div class="results-title">خطة الخدمات المُوصى بها</div>
+      <div class="results-sub">الوحدة الثالثة — ${u3.total_blocks_shown} كتلة | ثقة إجمالية ${u3.confidence_overall}%</div>
+    </div>
+    <div class="results-meta">
+      <span class="meta-chip ${u3.timeline==='fast'?'fast':'sustained'}">${u3.timeline==='fast'?'⚡ سريع':'🌱 مستدام'}</span>
+      <span class="meta-chip quota">${u3.total_blocks_shown} خدمات</span>
+    </div>
+  </div>`;
+
+  u3.result_blocks.forEach((blk,i)=>{
+    const typeClass = blk.block_type==='rank'
+      ? `type-rank-${blk.block_rank<=1?1:blk.block_rank<=2?2:blk.block_rank<=3?3:'n'}`
+      : `type-${blk.block_type}`;
+    const isOpen = i < 3; // first 3 blocks open by default
+    const f = blk.featured_service;
+    const conf = f.confidence_match;
+    const circumference = 2*Math.PI*22;
+    const dashOffset = circumference - (conf/100)*circumference;
+
+    // Foundation banner
+    let foundationHtml='';
+    if(blk.foundation_service){
+      const fs=blk.foundation_service;
+      foundationHtml=`<div class="foundation-banner">
+        <span class="foundation-icon">⭐</span>
+        <div>
+          <span class="foundation-label">خدمة تأسيسية مُوصى بها أولاً</span>
+          <span class="foundation-name">#${fs.id} ${fs.name_ar}</span>
+          <span class="foundation-sub"> — ${fs.price_from?.toLocaleString()} – ${fs.price_to?.toLocaleString()} ريال</span>
+        </div>
+      </div>`;
+    }
+
+    // Supporting services
+    let suppHtml='';
+    if(blk.supporting_services.length){
+      suppHtml=`<div class="supporting-wrap">
+        <div class="supporting-label">الخدمات الداعمة — ${u3.timeline==='fast'?'الأسرع أثراً':'الأطول تراكماً'}</div>
+        <div class="supporting-list">`;
+      blk.supporting_services.forEach(s=>{
+        if(!s.name_ar)return;
+        suppHtml+=`<div class="supporting-card">
+          <div class="supp-name">#${s.id} ${s.name_ar}</div>
+          <div class="supp-meta">
+            <span class="supp-price">${s.price_from?.toLocaleString()} ر.س</span>
+          </div>
+        </div>`;
+      });
+      suppHtml+=`</div></div>`;
+    }
+
+    html+=`
+    <div class="rec-block ${typeClass} ${isOpen?'open':''}" id="rec-${blk.block_id}">
+      <div class="rec-block-header" onclick="toggleRecBlock('${blk.block_id}')">
+        <span class="rec-block-icon">${blk.block_icon}</span>
+        <div class="rec-block-info">
+          <div class="rec-block-name">${blk.block_name}</div>
+          <div class="rec-block-subtitle">${blk.block_type==='rank'?`الترتيب #${blk.block_rank} • ${blk.block_score||0} نقطة`:blk.block_type==='fixed'?'ثابتة دائماً':blk.block_type==='sector'?'قطاعية — تجارة إلكترونية':'مرساة قياسية'}</div>
+        </div>
+        <span class="rec-block-chevron">▼</span>
+      </div>
+
+      <div class="rec-block-body">
+        ${foundationHtml}
+
+        <div class="featured-svc">
+          <div class="featured-badge">الخدمة المُبرزة</div>
+
+          <div class="featured-top">
+            <div>
+              <div class="featured-name">#${f.id} ${f.name_ar}</div>
+              <div class="featured-id">${f.name_en}</div>
+            </div>
+            <!-- Confidence ring -->
+            <div class="confidence-ring" title="نسبة التطابق مع ملفك">
+              <svg width="54" height="54" viewBox="0 0 54 54">
+                <circle class="track" cx="27" cy="27" r="22"/>
+                <circle class="fill" cx="27" cy="27" r="22" stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}"/>
+              </svg>
+              <div>
+                <span class="confidence-num">${conf}</span>
+                <span class="confidence-pct">%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="svc-meta-row">
+            <span class="svc-chip chip-price">${f.price_from?.toLocaleString()} – ${f.price_to?.toLocaleString()} ريال</span>
+            <span class="svc-chip chip-duration">⏱ ${f.duration}</span>
+            ${f.override_type!=='execution'?`<span class="svc-chip chip-override">📌 ${OVERRIDE_LABELS[f.override_type]||f.override_type}</span>`:''}
+          </div>
+
+          <div class="justification-wrap">
+            <div class="justification-label">سبب التوصية</div>
+            <div class="justification-text ${f.justification?'':'loading'}">${f.justification||'جاري توليد التبرير...'}</div>
+          </div>
+
+          <div class="svc-details">
+            <div class="svc-detail-box">
+              <span class="svc-detail-label">المؤشر الرئيسي</span>
+              <div class="svc-detail-val">${f.kpi}</div>
+            </div>
+            <div class="svc-detail-box">
+              <span class="svc-detail-label">الضمان</span>
+              <div class="svc-detail-val">${f.warranty}</div>
+            </div>
+          </div>
+        </div>
+
+        ${suppHtml}
+      </div>
+    </div>`;
+  });
+
+  // ── Summary footer ──
+  const minInv = u3.total_investment.min.toLocaleString();
+  const maxInv = u3.total_investment.max.toLocaleString();
+  html+=`
+  <div class="summary-footer">
+    <div class="summary-grid">
+      <div class="summary-box"><div class="summary-val">${u3.total_blocks_shown}</div><div class="summary-label">خطة خدمة شاملة</div></div>
+      <div class="summary-box"><div class="summary-val">${u3.confidence_overall}%</div><div class="summary-label">ثقة إجمالية</div></div>
+      <div class="summary-box"><div class="summary-val" style="font-size:14px">${minInv}–${maxInv}</div><div class="summary-label">النطاق الاستثماري (ر.س)</div></div>
+    </div>
+
+    <!-- OUTPUT_A pipeline JSON — Unit 3 → Unit 4 -->
+    <button class="json-toggle" onclick="toggleJSON(this)">{ } OUTPUT_A — JSON الوحدة الرابعة (Pipeline)</button>
+    <div class="json-section">
+      <div class="json-box">${escHtml(JSON.stringify(u3,null,2))}</div>
+      <button class="copy-btn" onclick="copyJSON('__u3JSON')">📋 نسخ JSON للوحدة الرابعة</button>
+    </div>
+
+    <!-- OUTPUT_B CRM JSON — spec §4.3 — sales team / HubSpot / Salesforce -->
+    <button class="json-toggle" style="margin-top:10px;border-color:rgba(39,174,96,0.4);color:var(--success)" onclick="toggleJSON(this)">
+      📊 OUTPUT_B — CRM JSON (Lead Record · spec §4.3)
+    </button>
+    <div class="json-section">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;padding:0 2px">
+        يتضمن 17 متغيراً تشخيصياً كاملاً بما فيها <strong>budget_period</strong> + follow_up_script + lead_score
+      </div>
+      <div class="json-box" style="color:#86efac">${escHtml(window.__crmJSON||'{}')}</div>
+      <button class="copy-btn" onclick="copyJSON('__crmJSON')">📋 نسخ CRM JSON للمبيعات</button>
+    </div>
+  </div>`;
+
+  window.__u3JSON = JSON.stringify(u3,null,2);
+  // __crmJSON is already set in proceedToUnit3() before renderU3Results is called
+
+  const el=document.getElementById('screen-u3results');
+  el.innerHTML=html;
+  document.querySelectorAll('.screen,.output-screen').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('unitTag').textContent='UNIT 3 ✓';
+}
+
+/* ════════════════════════════════════════════
+   SHARED UTILITIES
+════════════════════════════════════════════ */
+function toggleBK(id){ document.getElementById(id)?.classList.toggle('open'); }
+function toggleExcluded(btn){ const l=btn.nextElementSibling; l.classList.toggle('open'); btn.textContent=l.classList.contains('open')?btn.textContent.replace('▼','▲'):btn.textContent.replace('▲','▼'); }
+function toggleJSON(btn){ btn.nextElementSibling?.classList.toggle('open'); }
+function toggleRecBlock(id){
+  const el=document.getElementById('rec-'+id); el?.classList.toggle('open');
+}
+function copyJSON(key){
+  const txt=window[key]; if(!txt)return;
+  navigator.clipboard.writeText(txt).then(()=>{
+    const btn=event.target; btn.textContent='✅ تم النسخ!';
+    setTimeout(()=>{ btn.textContent=btn.textContent.includes('الرابعة')?'📋 نسخ JSON للوحدة الرابعة':'📋 نسخ JSON'; },2000);
+  });
+}
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ── Boot ── */
+init();
+</script>
+</body>
+</html>
