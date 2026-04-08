@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="slides-format" content="viewport">
+    <title>معرض أعمال — تطوير موقع AAFAQ | خارطة تقنية كاملة</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @theme {
+            --color-bg: #0A1A1A;
+            --color-bg-deep: #051010;
+            --color-surface: #112424;
+            --color-text: #F0FDFA;
+            --color-text-secondary: #CCFBF1;
+            --color-text-muted: #5EEAD4;
+            --color-accent-1: #2DD4BF;
+            --color-accent-2: #86EFAC;
+            --color-accent-3: #FBD38D;
+            --color-accent-4: #F9A8D4;
+            --color-glass-bg: rgba(45,212,191,0.06);
+            --color-glass-border: rgba(45,212,191,0.15);
+            --color-vignette: rgba(0,0,0,0.55);
+            --font-display: "Cairo", sans-serif;
+            --font-body: "Tajawal", sans-serif;
+            --font-mono: "JetBrains Mono", monospace;
+        }
+    </style>
+    <style>
+        :root { --color-bg:#0A1A1A; --color-text:#F0FDFA; }
+        *,*::before,*::after { box-sizing:border-box; }
+        html,body { background:var(--color-bg); margin:0; direction:rtl; }
+        body { font-family:"Tajawal",sans-serif; color:var(--color-text); overflow:hidden; height:100vh; width:100vw; }
+        .deck { width:100vw; height:100vh; position:relative; }
+        .slide { position:absolute; top:0; left:0; width:100%; height:100%; background:var(--color-bg); display:flex; flex-direction:column; align-items:center; justify-content:center; opacity:0; transform:scale(0.96); transition:opacity 0.65s ease, transform 0.65s ease; pointer-events:none; overflow:hidden; }
+        .slide.active { opacity:1; transform:scale(1); pointer-events:all; }
+        .slide>.content { position:relative; z-index:2; width:100%; max-width:1140px; padding:clamp(1.2rem,3.5vw,3rem); }
+        .slide::before { content:""; position:absolute; inset:0; z-index:1; pointer-events:none; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); background-size:256px 256px; opacity:0.025; mix-blend-mode:overlay; }
+        .slide::after { content:""; position:absolute; inset:0; z-index:1; pointer-events:none; background:radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.55) 100%); }
+        .gradient-mesh { position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+        .blob { position:absolute; border-radius:50%; filter:blur(80px); }
+        @keyframes f1 { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(60px,-50px) scale(1.1)} 66%{transform:translate(-40px,40px) scale(0.9)} 100%{transform:translate(0,0) scale(1)} }
+        @keyframes f2 { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(-50px,-60px) scale(1.15)} 66%{transform:translate(40px,30px) scale(0.88)} 100%{transform:translate(0,0) scale(1)} }
+        @keyframes f3 { 0%{transform:translateY(0)} 50%{transform:translateY(-16px)} 100%{transform:translateY(0)} }
+        @keyframes gp { 0%,100%{text-shadow:0 0 20px rgba(45,212,191,0.5),0 0 40px rgba(45,212,191,0.2)} 50%{text-shadow:0 0 35px rgba(45,212,191,0.9),0 0 70px rgba(45,212,191,0.35)} }
+        @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+        .blob:nth-child(1){animation:f1 10s ease-in-out infinite}
+        .blob:nth-child(2){animation:f2 14s ease-in-out infinite}
+        .blob:nth-child(3){animation:f1 18s ease-in-out infinite reverse}
+        .glow-pulse{animation:gp 3s ease-in-out infinite}
+        .float-icon{animation:f3 3s ease-in-out infinite}
+        .reveal{opacity:0;transform:translateY(22px)}
+        /* NAV */
+        .nav-controls{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;z-index:100;background:rgba(45,212,191,0.06);backdrop-filter:blur(12px);padding:9px 22px;border-radius:40px;border:1px solid rgba(45,212,191,0.15)}
+        .nav-btn{width:36px;height:36px;border:none;background:rgba(45,212,191,0.08);color:#2DD4BF;border-radius:50%;font-size:1.15rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.25s}
+        .nav-btn:hover{background:rgba(45,212,191,0.18)}
+        .slide-dots{display:flex;gap:7px}
+        .slide-dots .dot{width:8px;height:8px;border-radius:50%;background:rgba(45,212,191,0.2);cursor:pointer;transition:background 0.3s,transform 0.3s}
+        .slide-dots .dot.active{background:#2DD4BF;transform:scale(1.35)}
+        .slide-counter{font-size:0.75rem;color:#5EEAD4;min-width:38px;text-align:center;font-family:JetBrains Mono}
+        /* COMPONENTS */
+        .badge{display:inline-block;background:rgba(45,212,191,0.1);border:1px solid rgba(45,212,191,0.25);padding:3px 14px;border-radius:20px;font-size:0.7rem;letter-spacing:0.07em;color:#2DD4BF;text-transform:uppercase;margin-bottom:0.6rem}
+        .glass{background:rgba(45,212,191,0.05);backdrop-filter:blur(10px);border:1px solid rgba(45,212,191,0.13);border-radius:12px}
+        .glass-gold{border-color:rgba(251,211,141,0.2)}
+        .glass-green{border-color:rgba(134,239,172,0.2)}
+        .glass-pink{border-color:rgba(249,168,212,0.2)}
+        .h1{font-family:Cairo;font-weight:900;font-size:clamp(1.9rem,4.5vw,3.5rem);line-height:1.15}
+        .h2{font-family:Cairo;font-weight:800;font-size:clamp(1.4rem,2.8vw,2.1rem);line-height:1.2;margin-bottom:0.8rem}
+        .h3{font-family:Cairo;font-weight:700;font-size:0.95rem;color:#2DD4BF;margin-bottom:4px}
+        .mono{font-family:JetBrains Mono;font-size:0.72rem}
+        /* GRADIENT TEXT */
+        .gt{background:linear-gradient(135deg,#2DD4BF,#86EFAC,#2DD4BF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .gt-gold{background:linear-gradient(135deg,#FBD38D,#F6AD55);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        /* CODE BLOCK */
+        .code-block{background:#061010;border:1px solid rgba(45,212,191,0.18);border-radius:10px;padding:14px 16px;font-family:JetBrains Mono;font-size:0.72rem;line-height:1.7;overflow-x:auto;color:#a5f3fc}
+        .code-block .kw{color:#86EFAC}
+        .code-block .str{color:#FBD38D}
+        .code-block .cm{color:#5EEAD4;opacity:0.6}
+        .code-block .fn{color:#F9A8D4}
+        .code-block .num{color:#c084fc}
+        /* TAG */
+        .tag{display:inline-block;padding:2px 9px;border-radius:6px;font-size:0.68rem;font-weight:600;margin:2px}
+        .tag-teal{background:rgba(45,212,191,0.15);color:#2DD4BF;border:1px solid rgba(45,212,191,0.25)}
+        .tag-gold{background:rgba(251,211,141,0.12);color:#FBD38D;border:1px solid rgba(251,211,141,0.25)}
+        .tag-green{background:rgba(134,239,172,0.12);color:#86EFAC;border:1px solid rgba(134,239,172,0.25)}
+        .tag-pink{background:rgba(249,168,212,0.12);color:#F9A8D4;border:1px solid rgba(249,168,212,0.25)}
+        /* STEP BADGE */
+        .step-num{width:28px;height:28px;border-radius:50%;background:rgba(45,212,191,0.15);border:1.5px solid rgba(45,212,191,0.4);display:flex;align-items:center;justify-content:center;font-family:Cairo;font-weight:900;font-size:0.78rem;color:#2DD4BF;flex-shrink:0}
+        /* BAR */
+        .bar-t{background:rgba(45,212,191,0.08);border-radius:4px;height:7px;overflow:hidden;margin-top:8px}
+        .bar-f{height:100%;border-radius:4px;width:0%;transition:width 0.9s ease}
+        /* PROGRESS RING */
+        .ring-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center}
+        .ring-val{position:absolute;font-family:Cairo;font-weight:900;font-size:1.1rem;color:#2DD4BF}
+        /* CHECK */
+        .chk{color:#2DD4BF;font-size:0.9rem;margin-top:2px;flex-shrink:0}
+        /* DB TABLE */
+        .db-table{background:#061010;border:1px solid rgba(45,212,191,0.18);border-radius:10px;overflow:hidden;font-family:JetBrains Mono;font-size:0.68rem}
+        .db-table .th{background:rgba(45,212,191,0.1);padding:6px 12px;color:#2DD4BF;font-weight:600}
+        .db-table .tr{display:flex;border-bottom:1px solid rgba(45,212,191,0.07);padding:5px 12px;align-items:center;gap:10px}
+        .db-table .tr:last-child{border-bottom:none}
+        .db-table .col-name{color:#F0FDFA;flex:1.2}
+        .db-table .col-type{color:#c084fc;flex:1}
+        .db-table .col-note{color:#5EEAD4;flex:2;opacity:0.8}
+        /* MOUSE GLOW */
+        .mouse-glow{position:fixed;inset:0;z-index:99;pointer-events:none}
+        /* MOBILE HINT */
+        @media (max-width:600px) { .slide>.content{padding:1rem} }
+    </style>
+</head>
+<body>
+<div class="mouse-glow" id="mglow"></div>
+<div class="deck" id="deck">
+
+<!-- ===== SLIDE 1: COVER ===== -->
+<div class="slide active" data-slide="1">
+    <div class="gradient-mesh">
+        <div class="blob" style="width:550px;height:550px;top:-120px;right:-130px;background:#2DD4BF;opacity:0.12"></div>
+        <div class="blob" style="width:350px;height:350px;bottom:-90px;left:-80px;background:#86EFAC;opacity:0.09"></div>
+        <div class="blob" style="width:230px;height:230px;top:40%;left:18%;background:#FBD38D;opacity:0.07"></div>
+    </div>
+    <canvas id="pc1" style="position:absolute;inset:0;z-index:1;width:100%;height:100%"></canvas>
+    <div class="content text-center">
+        <div style="font-size:90px;margin-bottom:0.7rem" class="float-icon reveal">🌐</div>
+        <div class="badge reveal">معرض أعمال — خارطة تقنية كاملة</div>
+        <h1 class="h1 gt reveal" style="margin-bottom:0.5rem">تطوير موقع AAFAQ Creative Agency</h1>
+        <p style="color:#5EEAD4;font-size:1rem;font-weight:300;letter-spacing:0.04em;margin-bottom:1.8rem" class="reveal">Landing Page ديناميكية كاملة — PHP + MySQL + CMS مخصص</p>
+        <div style="display:flex;justify-content:center;gap:2.5rem;flex-wrap:wrap" class="reveal">
+            <div style="text-align:center">
+                <div style="font-family:Cairo;font-weight:900;font-size:2.2rem;color:#2DD4BF" class="glow-pulse" data-count="12" data-suffix="">0</div>
+                <div style="color:#5EEAD4;font-size:0.78rem;margin-top:3px">قسم وظيفي</div>
+            </div>
+            <div style="text-align:center">
+                <div style="font-family:Cairo;font-weight:900;font-size:2.2rem;color:#86EFAC" data-count="8" data-suffix=" جداول">0</div>
+                <div style="color:#5EEAD4;font-size:0.78rem;margin-top:3px">قاعدة البيانات</div>
+            </div>
+            <div style="text-align:center">
+                <div style="font-family:Cairo;font-weight:900;font-size:2.2rem;color:#FBD38D" data-count="7" data-suffix=" أيام">0</div>
+                <div style="color:#5EEAD4;font-size:0.78rem;margin-top:3px">مدة التنفيذ</div>
+            </div>
+            <div style="text-align:center">
+                <div style="font-family:Cairo;font-weight:900;font-size:2.2rem;color:#F9A8D4" data-count="95" data-suffix="+">0</div>
+                <div style="color:#5EEAD4;font-size:0.78rem;margin-top:3px">PageSpeed متوقع</div>
+            </div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:8px;margin-top:1.4rem;flex-wrap:wrap" class="reveal">
+            <span class="tag tag-teal">PHP 8.2</span><span class="tag tag-teal">MySQL 8</span><span class="tag tag-green">HTML5 + CSS3</span><span class="tag tag-green">JavaScript ES6</span><span class="tag tag-gold">Swiper.js</span><span class="tag tag-gold">GSAP</span><span class="tag tag-pink">Apache/cPanel</span>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SLIDE 2: TECH STACK DECISION ===== -->
+<div class="slide" data-slide="2">
+    <div class="gradient-mesh">
+        <div class="blob" style="width:380px;height:380px;top:-80px;left:-80px;background:#2DD4BF;opacity:0.08"></div>
+        <div class="blob" style="width:280px;height:280px;bottom:-60px;right:-50px;background:#86EFAC;opacity:0.06"></div>
+    </div>
+    <div class="content">
+        <div class="badge reveal">قرار التقنية</div>
+        <h2 class="h2 reveal">لماذا PHP + MySQL وليس غيرها؟</h2>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" class="reveal">
+            <div class="glass" style="padding:16px;border-color:rgba(45,212,191,0.35)">
+                <div style="font-size:1.6rem;margin-bottom:8px">✅</div>
+                <div style="font-weight:700;color:#2DD4BF;font-size:0.9rem;margin-bottom:6px">PHP + MySQL</div>
+                <div style="color:#CCFBF1;font-size:0.75rem;line-height:1.6">الاختيار الأمثل للمشروع<br>
+                • تنفيذ بـ 5–7 أيام ✓<br>
+                • CMS مخصص 100% ✓<br>
+                • Shared Hosting مدفوع ✓<br>
+                • صيانة سهلة للعميل ✓<br>
+                • ميزانية $100–250 ✓</div>
+                <div class="bar-t"><div class="bar-f" data-w="92" style="background:linear-gradient(to left,#2DD4BF,#86EFAC)"></div></div>
+                <div style="color:#2DD4BF;font-size:0.7rem;margin-top:5px;font-weight:700">92% ملاءمة للمشروع</div>
+            </div>
+            <div class="glass" style="padding:16px;opacity:0.7">
+                <div style="font-size:1.6rem;margin-bottom:8px">⚠️</div>
+                <div style="font-weight:700;color:#FBD38D;font-size:0.9rem;margin-bottom:6px">Next.js + Sanity</div>
+                <div style="color:#CCFBF1;font-size:0.75rem;line-height:1.6">أفضل أداءً لكن:<br>
+                • يحتاج 9–12 يوماً ✗<br>
+                • Sanity CMS تعقيد إضافي ✗<br>
+                • Vercel مجاني لكن محدود ✗<br>
+                • تعلّم لمشرف الموقع ✗</div>
+                <div class="bar-t"><div class="bar-f" data-w="60" style="background:linear-gradient(to left,#FBD38D,#F6AD55)"></div></div>
+                <div style="color:#FBD38D;font-size:0.7rem;margin-top:5px;font-weight:700">60% ملاءمة للميزانية</div>
+            </div>
+            <div class="glass" style="padding:16px;opacity:0.7">
+                <div style="font-size:1.6rem;margin-bottom:8px">❌</div>
+                <div style="font-weight:700;color:#F9A8D4;font-size:0.9rem;margin-bottom:6px">WordPress</div>
+                <div style="color:#CCFBF1;font-size:0.75rem;line-height:1.6">CMS جاهز لكن:<br>
+                • ثقيل للـ Landing Page ✗<br>
+                • Plugins = تعقيد ✗<br>
+                • PageSpeed 50–70 ✗<br>
+                • Customization محدود ✗</div>
+                <div class="bar-t"><div class="bar-f" data-w="40" style="background:linear-gradient(to left,#F9A8D4,#f472b6)"></div></div>
+                <div style="color:#F9A8D4;font-size:0.7rem;margin-top:5px;font-weight:700">40% ملاءمة للتصميم</div>
+            </div>
+        </div>
+        <div class="glass" style="padding:14px 18px;margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px" class="reveal">
+            <div style="text-align:center">
+                <div style="font-size:1.1rem;margin-bottom:4px">🖥️</div>
+                <div style="font-size:0.72rem;color:#2DD4BF;font-weight:700">Frontend</div>
+                <div style="font-size:0.68rem;color:#5EEAD4;margin-top:3px">HTML5 + CSS3 + Vanilla JS + GSAP + Swiper.js</div>
+            </div>
+            <div style="text-align:center">
+                <div style="font-size:1.1rem;margin-bottom:4px">⚙️</div>
+                <div style="font-size:0.72rem;color:#86EFAC;font-weight:700">Backend</div>
+                <div style="font-size:0.68rem;color:#5EEAD4;margin-top:3px">PHP 8.2 + PDO + OOP Architecture</div>
+            </div>
+            <div style="text-align:center">
+                <div style="font-size:1.1rem;margin-bottom:4px">🗄️</div>
+                <div style="font-size:0.72rem;color:#FBD38D;font-weight:700">Database</div>
+                <div style="font-size:0.68rem;color:#5EEAD4;margin-top:3px">MySQL 8 + phpMyAdmin + Migrations</div>
+            </div>
+            <div style="text-align:center">
+                <div style="font-size:1.1rem;margin-bottom:4px">🚀</div>
+                <div style="font-size:0.72rem;color:#F9A8D4;font-weight:700">Deployment</div>
+                <div style="font-size:0.68rem;color:#5EEAD4;margin-top:3px">cPanel / Apache + SSL + .htaccess</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SLIDE 3: FILE STRUCTURE ===== -->
+<div class="slide" data-slide="3">
+    <div class="gradient-mesh">
+        <div class="blob" style="width:350px;height:350px;top:-70px;right:-70px;background:#86EFAC;opacity:0.07"></div>
+        <div class="blob" style="width:260px;height:260px;bottom:-50px;left:-50px;background:#2DD4BF;opacity:0.06"></div>
+    </div>
+    <div class="content">
+        <div class="badge reveal">هيكل المشروع</div>
+        <h2 class="h2 reveal">بنية الملفات الكاملة — File Structure</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class="reveal">
+            <div>
+                <div class="code-block" style="font-size:0.68rem;line-height:1.8">
+<span class="kw">aafaq/</span><br>
+<span style="color:#5EEAD4">├── </span><span class="fn">public/</span><br>
+<span style="color:#5EEAD4">│   ├── </span><span class="str">index.php</span>  <span class="cm">← الصفحة الرئيسية</span><br>
+<span style="color:#5EEAD4">│   ├── css/</span><br>
+<span style="color:#5EEAD4">│   │   ├── </span><span class="str">main.css</span>  <span class="cm">← الستايل الرئيسي</span><br>
+<span style="color:#5EEAD4">│   │   ├── </span><span class="str">animations.css</span><br>
+<span style="color:#5EEAD4">│   │   └── </span><span class="str">responsive.css</span><br>
+<span style="color:#5EEAD4">│   ├── js/</span><br>
+<span style="color:#5EEAD4">│   │   ├── </span><span class="str">main.js</span>  <span class="cm">← منطق الصفحة</span><br>
+<span style="color:#5EEAD4">│   │   ├── </span><span class="str">animations.js</span>  <span class="cm">← GSAP</span><br>
+<span style="color:#5EEAD4">│   │   ├── </span><span class="str">form-validator.js</span><br>
+<span style="color:#5EEAD4">│   │   └── </span><span class="str">sliders.js</span>  <span class="cm">← Swiper</span><br>
+<span style="color:#5EEAD4">│   └── images/</span><br>
+<span style="color:#5EEAD4">│       ├── </span><span class="cm">portfolio/ clients/ testimonials/</span><br>
+<span style="color:#5EEAD4">├── </span><span class="fn">admin/</span>  <span class="cm">← لوحة التحكم</span><br>
+<span style="color:#5EEAD4">│   ├── </span><span class="str">index.php</span>  <span class="cm">← Dashboard</span><br>
+<span style="color:#5EEAD4">│   ├── </span><span class="str">packages.php</span><br>
+<span style="color:#5EEAD4">│   ├── </span><span class="str">portfolio.php</span><br>
+<span style="color:#5EEAD4">│   ├── </span><span class="str">clients.php</span><br>
+<span style="color:#5EEAD4">│   ├── </span><span class="str">faq.php</span><br>
+<span style="color:#5EEAD4">│   ├── </span><span class="str">testimonials.php</span><br>
+<span style="color:#5EEAD4">│   └── </span><span class="str">contacts.php</span>  <span class="cm">← رسائل العملاء</span><br>
+<span style="color:#5EEAD4">├── </span><span class="fn">api/</span>  <span class="cm">← AJAX Endpoints</span><br>
+<span style="color:#5EEAD4">│   ├── </span><span class="str">submit-contact.php</span><br>
+<span style="color:#5EEAD4">│   └── </span><span class="str">upload-image.php</span><br>
+<span style="color:#5EEAD4">├── </span><span class="fn">includes/</span><br>
+<span style="color:#5EEAD4">│   ├── </span><span class="str">db.php</span>  <span class="cm">← PDO Connection</span><br>
+<span style="color:#5EEAD4">│   ├── </span><span class="str">auth.php</span>  <span class="cm">← Admin Auth</span><br>
+<span style="color:#5EEAD4">│   └── </span><span class="str">functions.php</span><br>
+<span style="color:#5EEAD4">├── </span><span class="fn">config/</span><br>
+<span style="color:#5EEAD4">│   └── </span><span class="str">config.php</span>  <span class="cm">← DB credentials</span><br>
+<span style="color:#5EEAD4">└── </span><span class="str">.htaccess</span>  <span class="cm">← URL rewrite + Security</span>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+                <div class="glass" style="padding:12px 14px">
+                    <div class="h3">📁 public/</div>
+                    <p style="color:#5EEAD4;font-size:0.75rem;line-height:1.5">كل الملفات المرئية للزائر — الصفحة الرئيسية، الـ CSS، الـ JS، والصور</p>
+                </div>
+                <div class="glass glass-gold" style="padding:12px 14px">
+                    <div class="h3" style="color:#FBD38D">🎛️ admin/</div>
+                    <p style="color:#5EEAD4;font-size:0.75rem;line-height:1.5">لوحة التحكم الخاصة بالعميل — محمية بنظام تسجيل دخول + Session</p>
+                </div>
+                <div class="glass glass-green" style="padding:12px 14px">
+                    <div class="h3" style="color:#86EFAC">⚡ api/</div>
+                    <p style="color:#5EEAD4;font-size:0.75rem;line-height:1.5">نقاط AJAX — استقبال النماذج، رفع الصور، إعادة JSON فقط</p>
+                </div>
+                <div class="glass glass-pink" style="padding:12px 14px">
+                    <div class="h3" style="color:#F9A8D4">🔒 includes/ + config/</div>
+                    <p style="color:#5EEAD4;font-size:0.75rem;line-height:1.5">اتصال قاعدة البيانات، التحقق من الهوية، الدوال المشتركة — محمية من الوصول المباشر</p>
+                </div>
+                <div class="glass" style="padding:10px 14px">
+                    <div class="code-block" style="padding:8px 10px;margin:0">
+                        <span class="cm"># .htaccess — حماية وإعادة توجيه</span><br>
+                        <span class="kw">RewriteEngine</span> On<br>
+                        <span class="kw">RewriteRule</span> <span class="str">^admin/</span> admin/auth-check.php<br>
+                        <span class="fn">Options</span> -Indexes  <span class="cm"># إخفاء المجلدات</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SLIDE 4: DATABASE SCHEMA ===== -->
+<div class="slide" data-slide="4">
+    <div class="gradient-mesh">
+        <div class="blob" style="width:400px;height:400px;top:-90px;right:-90px;background:#c084fc;opacity:0.06"></div>
+        <div class="blob" style="width:300px;height:300px;bottom:-70px;left:-60px;background:#2DD4BF;opacity:0.07"></div>
+    </div>
+    <div class="content">
+        <div class="badge reveal">قاعدة البيانات</div>
+        <h2 class="h2 reveal">MySQL Schema — 8 جداول رئيسية</h2>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px" class="reveal">
+            <!-- packages -->
+            <div>
+                <div style="color:#FBD38D;font-size:0.72rem;font-weight:700;margin-bottom:4px;font-family:JetBrains Mono">📦 packages</div>
+                <div class="db-table">
+                    <div class="tr"><span class="col-name">id</span><span class="col-type">INT PK AI</span><span class="col-note">المعرف الأساسي</span></div>
+                    <div class="tr"><span class="col-name">name</span><span class="col-type">VARCHAR(100)</span><span class="col-note">Starter / Brand / Advanced</span></div>
+                    <div class="tr"><span class="col-name">price</span><span class="col-type">DECIMAL(10,2)</span><span class="col-note">1000 / 2500 / 6500</span></div>
+                    <div class="tr"><span class="col-name">currency</span><span class="col-type">VARCHAR(10)</span><span class="col-note">AED (افتراضي)</span></div>
+                    <div class="tr"><span class="col-name">features</span><span class="col-type">JSON</span><span class="col-note">قائمة الميزات ديناميكياً</span></div>
+                    <div class="tr"><span class="col-name">is_active / sort</span><span class="col-type">TINYINT</span><span class="col-note">إظهار + ترتيب</span></div>
+                </div>
+            </div>
+            <!-- portfolio -->
+            <div>
+                <div style="color:#2DD4BF;font-size:0.72rem;font-weight:700;margin-bottom:4px;font-family:JetBrains Mono">🖼️ portfolio_items</div>
+                <div class="db-table">
+                    <div class="tr"><span class="col-name">id</span><span class="col-type">INT PK AI</span><span class="col-note"></span></div>
+                    <div class="tr"><span class="col-name">title</span><span class="col-type">VARCHAR(200)</span><span class="col-note">Bestudio Branding…</span></div>
+                    <div class="tr"><span class="col-name">image</span><span class="col-type">VARCHAR(500)</span><span class="col-note">مسار الصورة WebP</span></div>
+                    <div class="tr"><span class="col-name">category</span><span class="col-type">VARCHAR(100)</span><span class="col-note">Branding / Identity…</span></div>
+                    <div class="tr"><span class="col-name">is_featured</span><span class="col-type">TINYINT</span><span class="col-note">إبراز في الـ Slider</span></div>
+                    <div class="tr"><span class="col-name">sort_order</span><span class="col-type">INT</span><span class="col-note">ترتيب العرض</span></div>
+                </div>
+            </div>
+            <!-- clients -->
+            <div>
+                <div style="color:#86EFAC;font-size:0.72rem;font-weight:700;margin-bottom:4px;font-family:JetBrains Mono">🎠 clients</div>
+                <div class="db-table">
+                    <div class="tr"><span class="col-name">id</span><span class="col-type">INT PK AI</span><span class="col-note"></span></div>
+                    <div class="tr"><span class="col-name">name</span><span class="col-type">VARCHAR(100)</span><span class="col-note">Bestudio / Alition…</span></div>
+                    <div class="tr"><span class="col-name">logo</span><span class="col-type">VARCHAR(500)</span><span class="col-note">شعار SVG / WebP</span></div>
+                    <div class="tr"><span class="col-name">sort_order / active</span><span class="col-type">INT</span><span class="col-note">ترتيب الـ Marquee</span></div>
+                </div>
+            </div>
+            <!-- contacts -->
+            <div>
+                <div style="color:#F9A8D4;font-size:0.72rem;font-weight:700;margin-bottom:4px;font-family:JetBrains Mono">📬 contacts</div>
+                <div class="db-table">
+                    <div class="tr"><span class="col-name">id</span><span class="col-type">INT PK AI</span><span class="col-note"></span></div>
+                    <div class="tr"><span class="col-name">first_name / last_name</span><span class="col-type">VARCHAR</span><span class="col-note">الاسم الثنائي</span></div>
+                    <div class="tr"><span class="col-name">email / phone</span><span class="col-type">VARCHAR</span><span class="col-note">بيانات التواصل</span></div>
+                    <div class="tr"><span class="col-name">country / specialty</span><span class="col-type">VARCHAR</span><span class="col-note">الدولة + نوع المشروع</span></div>
+                    <div class="tr"><span class="col-name">message</span><span class="col-type">TEXT</span><span class="col-note">رسالة العميل</span></div>
+                    <div class="tr"><span class="col-name">is_read / created_at</span><span class="col-type">TINYINT/TS</span><span class="col-note">حالة القراءة + التوقيت</span></div>
+                </div>
+            </div>
+        </div>
+        <div style="margin-top:10px;padding:10px 14px;border-radius:10px;background:rgba(45,212,191,0.06);border:1px solid rgba(45,212,191,0.14);display:flex;gap:12px;flex-wrap:wrap" class="reveal">
+            <span style="font-size:0.72rem;color:#5EEAD4">+ جداول إضافية:</span>
+            <span class="tag tag-teal">testimonials (تقييمات + نجوم)</span>
+            <span class="tag tag-gold">faqs (أسئلة + ترتيب)</span>
+            <span class="tag tag-green">services (الخدمات الـ 6)</span>
+            <span class="tag tag-pink">settings (إعدادات عامة)</span>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SLIDE 5: FRONTEND COMPONENTS ===== -->
+<div class="slide" data-slide="5">
+    <div class="gradient-mesh">
+        <div class="blob" style="width:370px;height:370px;top:-80px;left:-70px;background:#2DD4BF;opacity:0.08"></div>
+        <div class="blob" style="width:260px;height:260px;bottom:-60px;right:-50px;background:#FBD38D;opacity:0.06"></div>
+    </div>
+    <div class="content">
+        <div class="badge reveal">المكوّنات الأمامية</div>
+        <h2 class="h2 reveal">Frontend Components — التقنية لكل قسم</h2>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px" class="reveal">
+            <div class="glass" style="padding:12px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-direction:row-reverse">
+                    <span style="font-size:1.2rem">🎯</span>
+                    <span class="h3" style="margin:0">Hero Section</span>
+                </div>
+                <div class="code-block" style="padding:8px;margin:0;font-size:0.64rem">
+                    <span class="cm">// GSAP Timeline</span><br>
+                    <span class="fn">gsap</span>.<span class="kw">timeline</span>()<br>
+                    &nbsp;.<span class="kw">from</span>(<span class="str">".hero-title"</span>,{<br>
+                    &nbsp;&nbsp;<span class="num">y:80</span>, <span class="kw">opacity:0</span>,<br>
+                    &nbsp;&nbsp;<span class="num">duration:1.2</span>})<br>
+                    &nbsp;.<span class="kw">from</span>(<span class="str">".hero-cta"</span>,{…})
+                </div>
+            </div>
+            <div class="glass" style="padding:12px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-direction:row-reverse">
+                    <span style="font-size:1.2rem">🖼️</span>
+                    <span class="h3" style="margin:0">Portfolio Slider</span>
+                </div>
+                <div class="code-block" style="padding:8px;margin:0;font-size:0.64rem">
+                    <span class="cm">// Swiper.js</span><br>
+                    <span class="kw">new</span> <span class="fn">Swiper</span>(<span class="str">".portfolio"</span>,{<br>
+                    &nbsp;<span class="kw">slidesPerView</span>: <span class="num">3</span>,<br>
+                    &nbsp;<span class="kw">spaceBetween</span>: <span class="num">20</span>,<br>
+                    &nbsp;<span class="kw">loop</span>: <span class="num">true</span>,<br>
+                    &nbsp;<span class="kw">navigation</span>: {…}<br>
+                    });
+                </div>
+            </div>
+            <div class="glass glass-gold" style="padding:12px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-direction:row-reverse">
+                    <span style="font-size:1.2rem">🎠</span>
+                    <span class="h3" style="margin:0;color:#FBD38D">Clients Marquee</span>
+                </div>
+                <div class="code-block" style="padding:8px;margin:0;font-size:0.64rem">
+                    <span class="cm">/* CSS Infinite Scroll */</span><br>
+                    @<span class="kw">keyframes</span> marquee {<br>
+                    &nbsp;<span class="num">0%</span> {<span class="kw">transform</span>: <span class="fn">translateX(0)</span>}<br>
+                    &nbsp;<span class="num">100%</span> {<span class="kw">transform</span>:<br>
+                    &nbsp;&nbsp;<span class="fn">translateX(-50%)</span>}<br>
+                    }
+                </div>
+            </div>
+            <div class="glass" style="padding:12px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-direction:row-reverse">
+                    <span style="font-size:1.2rem">💬</span>
+                    <span class="h3" style="margin:0">Testimonials</span>
+                </div>
+                <div class="code-block" style="padding:8px;margin:0;font-size:0.64rem">
+                    <span class="cm">// Swiper Carousel</span><br>
+                    <span class="kw">new</span> <span class="fn">Swiper</span>(<span class="str">".testimonials"</span>,{<br>
+                    &nbsp;<span class="kw">autoplay</span>:{<span class="kw">delay</span>:<span class="num">4000</span>},<br>
+                    &nbsp;<span class="kw">effect</span>: <span class="str">"fade"</span>,<br>
+                    &nbsp;<span class="kw">pagination</span>:{…}<br>
+                    });
+                </div>
+            </div>
+            <div class="glass glass-green" style="padding:12px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-direction:row-reverse">
+                    <span style="font-size:1.2rem">❓</span>
+                    <span class="h3" style="margin:0;color:#86EFAC">FAQ Accordion</span>
+                </div>
+                <div class="code-block" style="padding:8px;margin:0;font-size:0.64rem">
+                    <span class="cm">// Pure JS toggle</span><br>
+                    <span class="fn">document</span>.<span class="kw">querySelectorAll</span>(<br>
+                    &nbsp;<span class="str">".faq-item"</span>)<br>
+                    .<span class="kw">forEach</span>(el =&gt; {<br>
+                    &nbsp;el.<span class="fn">addEventListener</span>(<span class="str">"click"</span>,<br>
+                    &nbsp;() =&gt; el.<span class="fn">classList</span>.<br>
+                    &nbsp;<span class="kw">toggle</span>(<span class="str">"open"</span>))<br>
+                    });
+                </div>
+            </div>
+            <div class="glass glass-pink" style="padding:12px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-direction:row-reverse">
+                    <span style="font-size:1.2rem">📬</span>
+                    <span class="h3" style="margin:0;color:#F9A8D4">Contact Form</span>
+                </div>
+                <div class="code-block" style="padding:8px;margin:0;font-size:0.64rem">
+                    <span class="cm">// AJAX Submit</span><br>
+                    <span class="kw">fetch</span>(<span class="str">"/api/contact"</span>, {<br>
+                    &nbsp;<span class="kw">method</span>: <span class="str">"POST"</span>,<br>
+                    &nbsp;<span class="kw">body</span>: <span class="fn">new FormData</span>(form)<br>
+                    }).<span class="kw">then</span>(res =&gt;<br>
+                    &nbsp;res.<span class="fn">json</span>()<br>
+                    ).<span class="kw">then</span>(showSuccess);
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SLIDE 6: CMS ADMIN PANEL ===== -->
+<div class="slide" data-slide="6">
+    <div class="gradient-mesh">
+        <div class="blob" style="width:390px;height:390px;top:-80px;right:-80px;background:#FBD38D;opacity:0.06"></div>
+        <div class="blob" style="width:270px;height:270px;bottom:-60px;left:-50px;background:#2DD4BF;opacity:0.07"></div>
+    </div>
+    <div class="content">
+        <div class="badge reveal">لوحة التحكم</div>
+        <h2 class="h2 reveal">CMS Admin Panel — ما يستطيع العميل تعديله</h2>
+        <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:14px" class="reveal">
+            <div style="display:flex;flex-direction:column;gap:8px">
+                <div class="glass" style="padding:12px 14px">
+                    <div style="display:flex;align-items:center;gap:10px;flex-direction:row-reverse;margin-bottom:6px">
+                        <span style="font-size:1.1rem">💰</span>
+                        <span class="h3" style="margin:0">إدارة الباقات</span>
+                    </div>
+                    <p style="color:#5EEAD4;font-size:0.75rem;line-height:1.5">تعديل: الاسم + السعر + العملة + الميزات (JSON) + إظهار/إخفاء + إعادة الترتيب بالـ Drag & Drop</p>
+                </div>
+                <div class="glass glass-gold" style="padding:12px 14px">
+                    <div style="display:flex;align-items:center;gap:10px;flex-direction:row-reverse;margin-bottom:6px">
+                        <span style="font-size:1.1rem">🖼️</span>
+                        <span class="h3" style="margin:0;color:#FBD38D">إدارة Portfolio</span>
+                    </div>
+                    <p style="color:#5EEAD4;font-size:0.75rem;line-height:1.5">رفع صور + تسمية + تصنيف + اختيار المميز في الـ Slider — تحويل تلقائي لـ WebP</p>
+                </div>
+                <div class="glass glass-green" style="padding:12px 14px">
+                    <div style="display:flex;align-items:center;gap:10px;flex-direction:row-reverse;margin-bottom:6px">
+                        <span style="font-size:1.1rem">🎠</span>
+                        <span class="h3" style="margin:0;color:#86EFAC">إدارة عملاء الـ Marquee</span>
+                    </div>
+                    <p style="color:#5EEAD4;font-size:0.75rem;line-height:1.5">رفع شعارات جديدة + حذف + إعادة الترتيب + إظهار/إخفاء في الـ Auto-Scroll</p>
+                </div>
+                <div class="glass glass-pink" style="padding:12px 14px">
+                    <div style="display:flex;align-items:center;gap:10px;flex-direction:row-reverse;margin-bottom:6px">
+                        <span style="font-size:1.1rem">📬</span>
+                        <span class="h3" style="margin:0;color:#F9A8D4">صندوق رسائل التواصل</span>
+                    </div>
+                    <p style="color:#5EEAD4;font-size:0.75rem;line-height:1.5">عرض كل رسائل النموذج + تصفية حسب التاريخ/الدولة + تحديد مقروء + تصدير Excel</p>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+                <div class="code-block" style="padding:12px;font-size:0.66rem;line-height:1.8">
+                    <span class="cm">// API: تعديل سعر الباقة</span><br>
+                    <span class="kw">POST</span> /api/admin/packages/update<br><br>
+                    {<br>
+                    &nbsp;<span class="str">"id"</span>: <span class="num">2</span>,<br>
+                    &nbsp;<span class="str">"name"</span>: <span class="str">"Brand Foundation"</span>,<br>
+                    &nbsp;<span class="str">"price"</span>: <span class="num">2800</span>,<br>
+                    &nbsp;<span class="str">"currency"</span>: <span class="str">"AED"</span>,<br>
+                    &nbsp;<span class="str">"features"</span>: [<br>
+                    &nbsp;&nbsp;<span class="str">"Logo Design"</span>,<br>
+                    &nbsp;&nbsp;<span class="str">"Brand Guidelines"</span>,<br>
+                    &nbsp;&nbsp;<span class="str">"Business Card"</span><br>
+                    &nbsp;]<br>
+                    }<br><br>
+                    <span class="cm">// Response</span><br>
+                    {<span class="str">"status"</span>: <span class="str">"success"</span>,<br>
+                    &nbsp;<span class="str">"message"</span>: <span class="str">"تم التحديث"</span>}
+                </div>
+                <div class="glass" style="padding:12px 14px">
+                    <div class="h3" style="margin-bottom:6px">🔒 نظام الأمان</div>
+                    <div style="display:flex;flex-direction:column;gap:5px">
+                        <div style="display:flex;align-items:center;gap:8px;flex-direction:row-reverse">
+                            <span style="color:#2DD4BF;font-size:0.8rem">✓</span>
+                            <span style="color:#5EEAD4;font-size:0.72rem">Session-based Authentication</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;flex-direction:row-reverse">
+                            <span style="color:#2DD4BF;font-size:0.8rem">✓</span>
+                            <span style="color:#5EEAD4;font-size:0.72rem">PDO Prepared Statements (منع SQL Injection)</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;flex-direction:row-reverse">
+                            <span style="color:#2DD4BF;font-size:0.8rem">✓</span>
+                            <span style="color:#5EEAD4;font-size:0.72rem">CSRF Token على كل النماذج</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;flex-direction:row-reverse">
+                            <span style="color:#2DD4BF;font-size:0.8rem">✓</span>
+                            <span style="color:#5EEAD4;font-size:0.72rem">htmlspecialchars() — منع XSS</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;flex-direction:row-reverse">
+                            <span style="color:#2DD4BF;font-size:0.8rem">✓</span>
+                            <span style="color:#5EEAD4;font-size:0.72rem">رفع الصور مع فحص MIME type</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SLIDE 7: RESPONSIVE STRATEGY ===== -->
+<div class="slide" data-slide="7">
+    <div class="gradient-mesh">
+        <div class="blob" style="width:380px;height:380px;top:-80px;left:-80px;background:#86EFAC;opacity:0.07"></div>
+        <div class="blob" style="width:270px;height:270px;bottom:-60px;right:-50px;background:#2DD4BF;opacity:0.07"></div>
+    </div>
+    <div class="content">
+        <div class="badge reveal">التصميم المتجاوب</div>
+        <h2 class="h2 reveal">Responsive Design — Mobile-First Strategy</h2>
+        <div style="display:grid;grid-template-columns:1fr 1.1fr;gap:14px" class="reveal">
+            <div>
+                <div style="color:#5EEAD4;font-size:0.8rem;margin-bottom:8px;font-weight:600">نقاط الكسر (Breakpoints)</div>
+                <div style="display:flex;flex-direction:column;gap:7px">
+                    <div class="glass glass-pink" style="padding:10px 14px;display:flex;justify-content:space-between;flex-direction:row;align-items:center">
+                        <div>
+                            <div style="font-weight:700;color:#F9A8D4;font-size:0.82rem">📱 Mobile</div>
+                            <div style="color:#5EEAD4;font-size:0.7rem">عمود واحد — Grid: 1 col</div>
+                        </div>
+                        <span class="mono" style="color:#F9A8D4">max-width: 640px</span>
+                    </div>
+                    <div class="glass glass-gold" style="padding:10px 14px;display:flex;justify-content:space-between;flex-direction:row;align-items:center">
+                        <div>
+                            <div style="font-weight:700;color:#FBD38D;font-size:0.82rem">📟 Tablet</div>
+                            <div style="color:#5EEAD4;font-size:0.7rem">عمودان — Grid: 2 cols</div>
+                        </div>
+                        <span class="mono" style="color:#FBD38D">641px – 1024px</span>
+                    </div>
+                    <div class="glass" style="padding:10px 14px;display:flex;justify-content:space-between;flex-direction:row;align-items:center">
+                        <div>
+                            <div style="font-weight:700;color:#2DD4BF;font-size:0.82rem">🖥️ Desktop</div>
+                            <div style="color:#5EEAD4;font-size:0.7rem">3 أعمدة — Full Layout</div>
+                        </div>
+                        <span class="mono" style="color:#2DD4BF">1025px+</span>
+                    </div>
+                    <div class="glass glass-green" style="padding:10px 14px;display:flex;justify-content:space-between;flex-direction:row;align-items:center">
+                        <div>
+                            <div style="font-weight:700;color:#86EFAC;font-size:0.82rem">🖥️ Wide</div>
+                            <div style="color:#5EEAD4;font-size:0.7rem">Max-Width Container</div>
+                        </div>
+                        <span class="mono" style="color:#86EFAC">1440px max</span>
+                    </div>
+                </div>
+                <div class="code-block" style="margin-top:10px;padding:10px;font-size:0.64rem;line-height:1.7">
+                    <span class="cm">/* Packages Grid — Mobile First */</span><br>
+                    .<span class="kw">packages-grid</span> { <span class="fn">grid-template-columns</span>: <span class="num">1fr</span>; }<br>
+                    @<span class="kw">media</span> (min-width: <span class="num">641px</span>) {<br>
+                    &nbsp;.<span class="kw">packages-grid</span> { <span class="fn">grid-template-columns</span>: <span class="num">repeat(2,1fr)</span>; }<br>
+                    }<br>
+                    @<span class="kw">media</span> (min-width: <span class="num">1025px</span>) {<br>
+                    &nbsp;.<span class="kw">packages-grid</span> { <span class="fn">grid-template-columns</span>: <span class="num">repeat(4,1fr)</span>; }<br>
+                    }
+                </div>
+            </div>
+            <div>
+                <div style="color:#5EEAD4;font-size:0.8rem;margin-bottom:8px;font-weight:600">تعديلات Mobile الخاصة بـ AAFAQ</div>
+                <div style="display:flex;flex-direction:column;gap:7px">
+                    <div class="glass" style="padding:10px 14px">
+                        <div class="h3" style="font-size:0.78rem;margin-bottom:3px">📦 Packages</div>
+                        <p style="color:#5EEAD4;font-size:0.72rem">Desktop: 4 أعمدة → Mobile: عمود واحد مع Scroll أفقي خفيف</p>
+                    </div>
+                    <div class="glass" style="padding:10px 14px">
+                        <div class="h3" style="font-size:0.78rem;margin-bottom:3px">🖼️ Portfolio Slider</div>
+                        <p style="color:#5EEAD4;font-size:0.72rem">Desktop: 3 صور → Tablet: 2 → Mobile: 1 مع swipe gesture</p>
+                    </div>
+                    <div class="glass glass-gold" style="padding:10px 14px">
+                        <div class="h3" style="font-size:0.78rem;margin-bottom:3px;color:#FBD38D">🍔 Navigation</div>
+                        <p style="color:#5EEAD4;font-size:0.72rem">Desktop: Navbar أفقي → Mobile: Hamburger Menu + Full-Screen Overlay</p>
+                    </div>
+                    <div class="glass" style="padding:10px 14px">
+                        <div class="h3" style="font-size:0.78rem;margin-bottom:3px">🎠 Clients Marquee</div>
+                        <p style="color:#5EEAD4;font-size:0.72rem">نفس الـ Auto-Scroll لكن حجم الشعارات أصغر + تقليل السرعة</p>
+                    </div>
+                    <div class="glass glass-pink" style="padding:10px 14px">
+                        <div class="h3" style="font-size:0.78rem;margin-bottom:3px;color:#F9A8D4">📬 Contact Form</div>
+                        <p style="color:#5EEAD4;font-size:0.72rem">Desktop: شبكة 2×3 → Mobile: عمود واحد + زر Submit بارز</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SLIDE 8: PERFORMANCE & SEO ===== -->
+<div class="slide" data-slide="8">
+    <div class="gradient-mesh">
+        <div class="blob" style="width:400px;height:400px;top:-90px;right:-90px;background:#2DD4BF;opacity:0.08"></div>
+        <div class="blob" style="width:290px;height:290px;bottom:-70px;left:-60px;background:#86EFAC;opacity:0.06"></div>
+    </div>
+    <div class="content">
+        <div class="badge reveal">الأداء والسيو</div>
+        <h2 class="h2 reveal">Performance + SEO — أهداف قابلة للقياس</h2>
+        <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:14px" class="reveal">
+            <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="color:#5EEAD4;font-size:0.8rem;font-weight:600;margin-bottom:2px">تحسينات الأداء</div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <div class="glass" style="padding:10px 14px">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-direction:row;margin-bottom:4px">
+                            <span style="font-size:0.78rem;font-weight:700;color:#F0FDFA">🖼️ تحويل الصور إلى WebP</span>
+                            <span style="color:#86EFAC;font-size:0.72rem;font-weight:700">-70% حجم</span>
+                        </div>
+                        <div class="bar-t"><div class="bar-f" data-w="88" style="background:linear-gradient(to left,#86EFAC,#2DD4BF)"></div></div>
+                    </div>
+                    <div class="glass" style="padding:10px 14px">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-direction:row;margin-bottom:4px">
+                            <span style="font-size:0.78rem;font-weight:700;color:#F0FDFA">⚡ Lazy Loading للصور</span>
+                            <span style="color:#86EFAC;font-size:0.72rem;font-weight:700">LCP أسرع</span>
+                        </div>
+                        <div class="bar-t"><div class="bar-f" data-w="78" style="background:linear-gradient(to left,#2DD4BF,#86EFAC)"></div></div>
+                    </div>
+                    <div class="glass" style="padding:10px 14px">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-direction:row;margin-bottom:4px">
+                            <span style="font-size:0.78rem;font-weight:700;color:#F0FDFA">🗜️ Minify CSS + JS</span>
+                            <span style="color:#FBD38D;font-size:0.72rem;font-weight:700">-45% حجم الملفات</span>
+                        </div>
+                        <div class="bar-t"><div class="bar-f" data-w="72" style="background:linear-gradient(to left,#FBD38D,#F6AD55)"></div></div>
+                    </div>
+                    <div class="glass" style="padding:10px 14px">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-direction:row;margin-bottom:4px">
+                            <span style="font-size:0.78rem;font-weight:700;color:#F0FDFA">🗄️ MySQL Query Caching</span>
+                            <span style="color:#2DD4BF;font-size:0.72rem;font-weight:700">استجابة أسرع</span>
+                        </div>
+                        <div class="bar-t"><div class="bar-f" data-w="65" style="background:linear-gradient(to left,#2DD4BF,#86EFAC)"></div></div>
+                    </div>
+                    <div class="glass" style="padding:10px 14px">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-direction:row;margin-bottom:4px">
+                            <span style="font-size:0.78rem;font-weight:700;color:#F0FDFA">🔒 SSL + HTTPS</span>
+                            <span style="color:#86EFAC;font-size:0.72rem;font-weight:700">أمان + ثقة جوجل</span>
+                        </div>
+                        <div class="bar-t"><div class="bar-f" data-w="100" style="background:linear-gradient(to left,#86EFAC,#2DD4BF)"></div></div>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="color:#5EEAD4;font-size:0.8rem;font-weight:600;margin-bottom:2px">تحسينات السيو الأساسية</div>
+                <div class="code-block" style="font-size:0.64rem;line-height:1.8;padding:12px">
+                    <span class="cm">&lt;!-- Meta Tags لـ AAFAQ --&gt;</span><br>
+                    &lt;<span class="kw">title</span>&gt;<span class="str">AAFAQ Creative Agency</span>&lt;/<span class="kw">title</span>&gt;<br>
+                    &lt;<span class="fn">meta</span> name=<span class="str">"description"</span><br>
+                    &nbsp;content=<span class="str">"Where Vision Meets Horizon"</span>&gt;<br>
+                    &lt;<span class="fn">meta</span> property=<span class="str">"og:title"</span>…&gt;<br>
+                    &lt;<span class="fn">link</span> rel=<span class="str">"canonical"</span>…&gt;<br><br>
+                    <span class="cm">&lt;!-- Schema Markup --&gt;</span><br>
+                    &lt;<span class="kw">script</span> type=<span class="str">"application/ld+json"</span>&gt;<br>
+                    {<span class="str">"@type"</span>: <span class="str">"LocalBusiness"</span>,<br>
+                    &nbsp;<span class="str">"name"</span>: <span class="str">"AAFAQ Agency"</span>,<br>
+                    &nbsp;<span class="str">"offers"</span>: [{<span class="cm">…Packages…</span>}],<br>
+                    &nbsp;<span class="str">"review"</span>: [{<span class="cm">…Testimonials…</span>}]}<br>
+                    &lt;/<span class="kw">script</span>&gt;
+                </div>
+                <div class="glass" style="padding:10px 14px">
+                    <div style="display:flex;flex-direction:column;gap:4px">
+                        <div style="display:flex;justify-content:space-between;flex-direction:row">
+                            <span style="color:#5EEAD4;font-size:0.72rem">🎯 PageSpeed Mobile</span>
+                            <span style="color:#86EFAC;font-weight:700;font-size:0.72rem">85+</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;flex-direction:row">
+                            <span style="color:#5EEAD4;font-size:0.72rem">🎯 PageSpeed Desktop</span>
+                            <span style="color:#2DD4BF;font-weight:700;font-size:0.72rem">95+</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;flex-direction:row">
+                            <span style="color:#5EEAD4;font-size:0.72rem">⏱️ Time to First Byte</span>
+                            <span style="color:#FBD38D;font-weight:700;font-size:0.72rem">< 200ms</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;flex-direction:row">
+                            <span style="color:#5EEAD4;font-size:0.72rem">📦 Total Page Size</span>
+                            <span style="color:#86EFAC;font-weight:700;font-size:0.72rem">< 1.5MB</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SLIDE 9: DEPLOYMENT ===== -->
+<div class="slide" data-slide="9">
+    <div class="gradient-mesh">
+        <div class="blob" style="width:360px;height:360px;top:-80px;left:-70px;background:#F9A8D4;opacity:0.06"></div>
+        <div class="blob" style="width:260px;height:260px;bottom:-60px;right:-50px;background:#2DD4BF;opacity:0.07"></div>
+    </div>
+    <div class="content">
+        <div class="badge reveal">الرفع والتسليم</div>
+        <h2 class="h2 reveal">Deployment — خطوات الرفع على السيرفر</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class="reveal">
+            <div>
+                <div style="color:#5EEAD4;font-size:0.8rem;font-weight:600;margin-bottom:8px">خطوات الـ Deployment</div>
+                <div style="display:flex;flex-direction:column;gap:7px">
+                    <div style="display:flex;align-items:flex-start;gap:10px;flex-direction:row-reverse">
+                        <div class="step-num">1</div>
+                        <div class="glass" style="padding:10px 12px;flex:1">
+                            <div class="h3" style="font-size:0.78rem;margin-bottom:3px">إنشاء قاعدة البيانات</div>
+                            <p style="color:#5EEAD4;font-size:0.7rem">cPanel → MySQL Databases → إنشاء DB + User + رفع SQL dump</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:flex-start;gap:10px;flex-direction:row-reverse">
+                        <div class="step-num">2</div>
+                        <div class="glass" style="padding:10px 12px;flex:1">
+                            <div class="h3" style="font-size:0.78rem;margin-bottom:3px">رفع الملفات</div>
+                            <p style="color:#5EEAD4;font-size:0.7rem">FileZilla / cPanel File Manager → public_html/ + ضبط config.php</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:flex-start;gap:10px;flex-direction:row-reverse">
+                        <div class="step-num">3</div>
+                        <div class="glass glass-gold" style="padding:10px 12px;flex:1">
+                            <div class="h3" style="font-size:0.78rem;margin-bottom:3px;color:#FBD38D">ربط النطاق + SSL</div>
+                            <p style="color:#5EEAD4;font-size:0.7rem">إضافة A Record → Let's Encrypt Certificate → Force HTTPS في .htaccess</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:flex-start;gap:10px;flex-direction:row-reverse">
+                        <div class="step-num">4</div>
+                        <div class="glass" style="padding:10px 12px;flex:1">
+                            <div class="h3" style="font-size:0.78rem;margin-bottom:3px">إعداد البريد الإلكتروني</div>
+                            <p style="color:#5EEAD4;font-size:0.7rem">SMTP عبر cPanel + PHPMailer → إشعارات Contact Form لبريد العميل</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:flex-start;gap:10px;flex-direction:row-reverse">
+                        <div class="step-num" style="background:rgba(134,239,172,0.15);border-color:rgba(134,239,172,0.4);color:#86EFAC">5</div>
+                        <div class="glass glass-green" style="padding:10px 12px;flex:1">
+                            <div class="h3" style="font-size:0.78rem;margin-bottom:3px;color:#86EFAC">اختبار نهائي + تسليم</div>
+                            <p style="color:#5EEAD4;font-size:0.7rem">PageSpeed Test + Mobile Test + Form Test + تسليم بيانات دخول لوحة التحكم</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+                <div class="code-block" style="font-size:0.64rem;line-height:1.8;padding:12px">
+                    <span class="cm"># .htaccess — الإعداد الكامل</span><br>
+                    <span class="kw">RewriteEngine</span> On<br><br>
+                    <span class="cm"># Force HTTPS</span><br>
+                    <span class="kw">RewriteCond</span> %{HTTPS} off<br>
+                    <span class="kw">RewriteRule</span> ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]<br><br>
+                    <span class="cm"># Protect admin from direct access</span><br>
+                    <span class="kw">RewriteRule</span> <span class="str">^admin/$</span> admin/login.php [L]<br><br>
+                    <span class="cm"># Block directory listing</span><br>
+                    <span class="fn">Options</span> -Indexes<br><br>
+                    <span class="cm"># Gzip Compression</span><br>
+                    &lt;<span class="kw">IfModule</span> mod_deflate.c&gt;<br>
+                    &nbsp;<span class="fn">AddOutputFilterByType</span> <span class="str">DEFLATE text/css text/javascript</span><br>
+                    &lt;/<span class="kw">IfModule</span>&gt;<br><br>
+                    <span class="cm"># Browser Caching</span><br>
+                    <span class="kw">ExpiresByType</span> image/webp <span class="str">"access plus 1 year"</span>
+                </div>
+                <div class="glass" style="padding:10px 14px">
+                    <div class="h3" style="margin-bottom:6px">📋 Checklist التسليم</div>
+                    <div style="display:flex;flex-direction:column;gap:4px">
+                        <div style="display:flex;gap:8px;flex-direction:row-reverse;align-items:center">
+                            <span style="color:#86EFAC;font-size:0.78rem">✓</span>
+                            <span style="color:#5EEAD4;font-size:0.7rem">الموقع مرفوع ويعمل بالكامل</span>
+                        </div>
+                        <div style="display:flex;gap:8px;flex-direction:row-reverse;align-items:center">
+                            <span style="color:#86EFAC;font-size:0.78rem">✓</span>
+                            <span style="color:#5EEAD4;font-size:0.7rem">لوحة التحكم تعمل + تسليم بيانات الدخول</span>
+                        </div>
+                        <div style="display:flex;gap:8px;flex-direction:row-reverse;align-items:center">
+                            <span style="color:#86EFAC;font-size:0.78rem">✓</span>
+                            <span style="color:#5EEAD4;font-size:0.7rem">Source Code على ZIP منظم</span>
+                        </div>
+                        <div style="display:flex;gap:8px;flex-direction:row-reverse;align-items:center">
+                            <span style="color:#86EFAC;font-size:0.78rem">✓</span>
+                            <span style="color:#5EEAD4;font-size:0.7rem">دليل مستخدم PDF مصوَّر</span>
+                        </div>
+                        <div style="display:flex;gap:8px;flex-direction:row-reverse;align-items:center">
+                            <span style="color:#86EFAC;font-size:0.78rem">✓</span>
+                            <span style="color:#5EEAD4;font-size:0.7rem">SQL Dump للنسخ الاحتياطي</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SLIDE 10: FINAL SUMMARY ===== -->
+<div class="slide" data-slide="10">
+    <div class="gradient-mesh">
+        <div class="blob" style="width:500px;height:500px;top:-110px;left:-100px;background:#2DD4BF;opacity:0.11"></div>
+        <div class="blob" style="width:330px;height:330px;bottom:-80px;right:-70px;background:#86EFAC;opacity:0.08"></div>
+        <div class="blob" style="width:220px;height:220px;top:40%;right:16%;background:#FBD38D;opacity:0.07"></div>
+    </div>
+    <canvas id="pc10" style="position:absolute;inset:0;z-index:1;width:100%;height:100%"></canvas>
+    <div class="content text-center">
+        <div style="font-size:80px;margin-bottom:0.7rem" class="float-icon reveal">🏆</div>
+        <div class="badge reveal">ملخص المشروع</div>
+        <h2 style="font-family:Cairo;font-weight:900;font-size:clamp(1.6rem,3.5vw,2.8rem);background:linear-gradient(135deg,#2DD4BF,#86EFAC,#FBD38D);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:1.2rem" class="reveal">
+            موقع AAFAQ — من التصميم إلى الإنتاج
+        </h2>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.2rem" class="reveal">
+            <div class="glass" style="padding:14px;text-align:center">
+                <div style="font-size:1.6rem;margin-bottom:5px">📐</div>
+                <div style="font-weight:700;color:#2DD4BF;font-size:0.82rem">12 قسماً</div>
+                <div style="color:#5EEAD4;font-size:0.7rem;margin-top:3px">وظيفياً ديناميكياً</div>
+            </div>
+            <div class="glass glass-gold" style="padding:14px;text-align:center">
+                <div style="font-size:1.6rem;margin-bottom:5px">🗄️</div>
+                <div style="font-weight:700;color:#FBD38D;font-size:0.82rem">8 جداول</div>
+                <div style="color:#5EEAD4;font-size:0.7rem;margin-top:3px">MySQL مُحكَمة</div>
+            </div>
+            <div class="glass glass-green" style="padding:14px;text-align:center">
+                <div style="font-size:1.6rem;margin-bottom:5px">📱</div>
+                <div style="font-weight:700;color:#86EFAC;font-size:0.82rem">4 Breakpoints</div>
+                <div style="color:#5EEAD4;font-size:0.7rem;margin-top:3px">Mobile First</div>
+            </div>
+            <div class="glass glass-pink" style="padding:14px;text-align:center">
+                <div style="font-size:1.6rem;margin-bottom:5px">🚀</div>
+                <div style="font-weight:700;color:#F9A8D4;font-size:0.82rem">PageSpeed 95+</div>
+                <div style="color:#5EEAD4;font-size:0.7rem;margin-top:3px">Desktop</div>
+            </div>
+        </div>
+        <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-bottom:1.2rem" class="reveal">
+            <span class="tag tag-teal">PHP 8.2</span><span class="tag tag-teal">PDO + MySQL 8</span><span class="tag tag-green">GSAP 3</span><span class="tag tag-green">Swiper.js</span><span class="tag tag-gold">WebP Images</span><span class="tag tag-gold">CSRF Protection</span><span class="tag tag-pink">SSL / HTTPS</span><span class="tag tag-pink">Schema Markup</span>
+        </div>
+        <div style="padding:14px 20px;border-radius:14px;background:rgba(45,212,191,0.09);border:1px solid rgba(45,212,191,0.2);max-width:600px;margin:0 auto" class="reveal">
+            <p style="color:#CCFBF1;font-size:0.92rem;font-weight:700;line-height:1.6">
+                هذه العينة تُمثّل طريقتي في تحويل التصميمات إلى أنظمة ويب كاملة:<br>
+                <span style="color:#5EEAD4;font-weight:400;font-size:0.82rem">تنفيذ بصري دقيق، بنية تقنية واضحة، وإدارة سهلة بعد التسليم.</span>
+            </p>
+        </div>
+    </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- NAVIGATION -->
+<div class="nav-controls">
+    <button class="nav-btn" onclick="cs(-1)">&#8249;</button>
+    <div class="slide-dots" id="dots"></div>
+    <button class="nav-btn" onclick="cs(1)">&#8250;</button>
+    <span class="slide-counter" id="counter">1 / 10</span>
+</div>
+
+<script>
+let cur = 1;
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+const dots = document.getElementById('dots');
+const counter = document.getElementById('counter');
+for (let i = 1; i <= total; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 1 ? ' active' : '');
+    d.onclick = () => go(i);
+    dots.appendChild(d);
+}
+function go(n) {
+    const prev = document.querySelector('.slide.active');
+    const next = document.querySelector(`.slide[data-slide="${n}"]`);
+    if (prev) prev.classList.remove('active');
+    if (next) { next.classList.add('active'); anim(next); }
+    cur = n; upNav();
+}
+function cs(dir) { let n = cur + dir; if (n < 1) n = total; if (n > total) n = 1; go(n); }
+function upNav() { document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i + 1 === cur)); counter.textContent = cur + ' / ' + total; }
+function anim(slide) {
+    slide.querySelectorAll('.reveal').forEach((el, i) => {
+        el.style.transition = 'none'; el.style.opacity = '0'; el.style.transform = 'translateY(22px)'; el.offsetHeight;
+        const d = i * 0.07;
+        el.style.transition = `opacity 0.35s ease ${d}s, transform 0.35s ease ${d}s`;
+        el.style.opacity = '1'; el.style.transform = 'translateY(0)';
+    });
+    slide.querySelectorAll('.bar-f:not(.bi)').forEach((b, i) => {
+        b.classList.add('bi'); b.style.width = '0%'; b.style.transition = `width 0.9s ease ${i * 0.12}s`; b.offsetHeight; b.style.width = (b.dataset.w || 0) + '%';
+    });
+    slide.querySelectorAll('[data-count]:not(.counted)').forEach(el => {
+        el.classList.add('counted');
+        const target = parseInt(el.dataset.count), suffix = el.dataset.suffix || '', prefix = el.dataset.prefix || '';
+        let c = 0; const step = target / 40;
+        const t = setInterval(() => { c += step; if (c >= target) { c = target; clearInterval(t); } el.textContent = prefix + Math.round(c).toLocaleString() + suffix; }, 28);
+    });
+}
+document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); cs(1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); cs(-1); }
+});
+let tx = 0;
+document.addEventListener('touchstart', e => tx = e.touches[0].clientX);
+document.addEventListener('touchend', e => { const d = tx - e.changedTouches[0].clientX; if (Math.abs(d) > 45) cs(d > 0 ? 1 : -1); });
+document.addEventListener('mousemove', e => {
+    document.getElementById('mglow').style.background = `radial-gradient(600px circle at ${e.clientX}px ${e.clientY}px, rgba(45,212,191,0.055), transparent 40%)`;
+});
+function initP(canvas) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
+    let mx = -9e9, my = -9e9;
+    const ps = Array.from({length: 55}, () => ({
+        x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+        s: Math.random() * 2.5 + 0.7, a: Math.random() * 0.32 + 0.08
+    }));
+    canvas.addEventListener('mousemove', e => { const r = canvas.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; });
+    canvas.addEventListener('mouseleave', () => { mx = my = -9e9; });
+    (function loop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ps.forEach(p => {
+            const dx = p.x - mx, dy = p.y - my, dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 120) { const f = (120 - dist) / 120 * 2; p.vx += (dx / dist) * f * 0.1; p.vy += (dy / dist) * f * 0.1; }
+            p.vx *= 0.98; p.vy *= 0.98; p.x += p.vx; p.y += p.vy;
+            if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0;
+            if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(45,212,191,${p.a})`; ctx.fill();
+        });
+        requestAnimationFrame(loop);
+    })();
+}
+['pc1','pc10'].forEach(id => initP(document.getElementById(id)));
+anim(document.querySelector('.slide.active'));
+</script>
+</body>
+</html>
